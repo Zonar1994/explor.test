@@ -25,11 +25,15 @@ interface MapViewProps {
   onPoiClick: (id: string) => void;
 }
 
-function MapController({ center }: { center: [number, number] }) {
+function MapController({ center, zoom }: { center: [number, number], zoom?: number }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, map.getZoom());
-  }, [center, map]);
+    if (zoom) {
+      map.flyTo(center, zoom, { duration: 1.5 });
+    } else {
+      map.setView(center, map.getZoom());
+    }
+  }, [center, map, zoom]);
   return null;
 }
 
@@ -73,10 +77,10 @@ function MapControls({ onPoiClick }: { onPoiClick: (id: string) => void }) {
   );
 }
 
-export function MapView({ pois, onPoiClick }: MapViewProps) {
-  const defaultCenter: [number, number] = [51.1657, 10.4515]; // Center of Germany/Europe roughly
+export function MapView({ pois, onPoiClick, selectedPoiId }: MapViewProps & { selectedPoiId?: string | null }) {
+  const defaultCenter: [number, number] = [48.8566, 2.3522]; // Center of Europe roughly (Paris)
   const [zoomLevel, setZoomLevel] = useState(5);
-  const ZOOM_THRESHOLD = 6; // POIs appear when zoom is > 6
+  const ZOOM_THRESHOLD = 4; // POIs appear when zoom is > 4
 
   return (
     <div className="absolute inset-0 z-0">
@@ -94,6 +98,10 @@ export function MapView({ pois, onPoiClick }: MapViewProps) {
         <ZoomHandler onZoomChange={setZoomLevel} />
         <MapControls onPoiClick={onPoiClick} />
         
+        {selectedPoiId && pois.find(p => p.id === selectedPoiId) && (
+          <MapController center={[pois.find(p => p.id === selectedPoiId)!.lat, pois.find(p => p.id === selectedPoiId)!.lng]} zoom={13} />
+        )}
+
         {zoomLevel > ZOOM_THRESHOLD && pois.map((poi) => (
           <Marker 
             key={poi.id} 

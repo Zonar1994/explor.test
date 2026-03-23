@@ -1,12 +1,6 @@
 import { Trip, POI } from '../types';
 
-export const initialTrips: Trip[] = [
-  { id: '1', name: "Lucy's skyriderssss", start: "Feb 23 2026", end: "March 30 2026", pois: ['poi-1', 'poi-2'] },
-  { id: '2', name: "D-Day Roadtrip", start: "April 10 2026", end: "May 05 2026", pois: ['poi-3', 'poi-8', 'poi-9'] },
-  { id: '3', name: "All the way to norway", start: "August 1 2026", end: "Sept 30 2026", pois: ['poi-4', 'poi-5'] },
-  { id: '4', name: "Alps Hiking Adventure", start: "June 15 2026", end: "July 01 2026", pois: ['poi-6', 'poi-10'] },
-  { id: '5', name: "Berlin Weekend", start: "October 10 2026", end: "October 12 2026", pois: ['poi-7', 'poi-1'] },
-];
+export const initialTrips: Trip[] = [];
 
 export const mockPois: POI[] = [
   {
@@ -168,5 +162,85 @@ export const mockPois: POI[] = [
     image: "https://images.unsplash.com/photo-1548625361-1b33075ea87d?q=80&w=800&auto=format&fit=crop",
     lat: 49.440,
     lng: 1.095
+  },
+  {
+    id: 'poi-11',
+    name: "Eiffel Tower",
+    type: "Historical Landmark",
+    tags: ["Landmark", "Views", "Must See"],
+    distance: "1.2 km",
+    rating: 5,
+    reviews: 12500,
+    hours: "Open 9:00 AM - 11:45 PM",
+    description: "Iconic wrought-iron lattice tower on the Champ de Mars in Paris, France. It is named after the engineer Gustave Eiffel.",
+    addedBy: "@traveler_jane",
+    duration: "2:30",
+    image: "https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?auto=format&fit=crop&q=80&w=1000",
+    lat: 48.8584,
+    lng: 2.2945
+  },
+  {
+    id: 'poi-12',
+    name: "Colosseum",
+    type: "Historical Landmark",
+    tags: ["Ancient", "Ruins", "History"],
+    distance: "15 km",
+    rating: 5,
+    reviews: 15200,
+    hours: "Open 8:30 AM - 7:00 PM",
+    description: "An oval amphitheatre in the centre of the city of Rome, Italy. It is the largest ancient amphitheatre ever built.",
+    addedBy: "@history_buff",
+    duration: "2:00",
+    image: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&q=80&w=1000",
+    lat: 41.8902,
+    lng: 12.4922
+  },
+  {
+    id: 'poi-13',
+    name: "Sagrada Familia",
+    type: "Architecture",
+    tags: ["Gaudí", "Church", "Architecture"],
+    distance: "3.1 km",
+    rating: 5,
+    reviews: 11000,
+    hours: "Open 9:00 AM - 8:00 PM",
+    description: "A large unfinished Roman Catholic minor basilica in the Eixample district of Barcelona, Catalonia, Spain. Designed by Antoni Gaudí.",
+    addedBy: "@arch_hunter",
+    duration: "3:00",
+    image: "https://images.unsplash.com/photo-1583422409516-2895a77efded?auto=format&fit=crop&q=80&w=1000",
+    lat: 41.4036,
+    lng: 2.1744
+  },
+  {
+    id: 'poi-14',
+    name: "Tower of London",
+    type: "Historical Landmark",
+    tags: ["Castle", "Crown Jewels", "History"],
+    distance: "4.2 km",
+    rating: 4,
+    reviews: 9500,
+    hours: "Open 9:00 AM - 5:30 PM",
+    description: "Historic castle on the north bank of the River Thames in central London. Famous for housing the Crown Jewels.",
+    addedBy: "@londoner",
+    duration: "3:30",
+    image: "https://images.unsplash.com/photo-1572120360610-d971b9d7767c?auto=format&fit=crop&q=80&w=1000",
+    lat: 51.5081,
+    lng: -0.0759
+  },
+  {
+    id: 'poi-15',
+    name: "Rijksmuseum",
+    type: "Museum",
+    tags: ["Art", "Dutch Masters", "Museum"],
+    distance: "1.8 km",
+    rating: 5,
+    reviews: 7200,
+    hours: "Open 9:00 AM - 5:00 PM",
+    description: "A Dutch national museum dedicated to arts and history in Amsterdam. Features masterpieces by Rembrandt and Vermeer.",
+    addedBy: "@dutch_art",
+    duration: "4:00",
+    image: "https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?auto=format&fit=crop&q=80&w=1000",
+    lat: 52.3600,
+    lng: 4.8852
   }
 ];

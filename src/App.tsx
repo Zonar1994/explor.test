@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Route } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { MapView } from './components/Map/MapView';
@@ -12,7 +12,25 @@ import { Trip, ModalState } from './types';
 
 export default function App() {
   const [activeModal, setActiveModal] = useState<ModalState>('trips');
-  const [trips, setTrips] = useState<Trip[]>(initialTrips);
+  
+  // Load trips from localStorage or use initialTrips
+  const [trips, setTrips] = useState<Trip[]>(() => {
+    const saved = localStorage.getItem('travel_trips');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return initialTrips;
+      }
+    }
+    return initialTrips;
+  });
+
+  // Save trips to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('travel_trips', JSON.stringify(trips));
+  }, [trips]);
+
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -31,6 +49,16 @@ export default function App() {
   const handleCreateTrip = (newTrip: Trip) => {
     setTrips([newTrip, ...trips]);
     setActiveModal('trips');
+    toast.success('Trip created successfully!');
+  };
+
+  const handleDeleteTrip = (id: string) => {
+    setTrips(trips.filter(t => t.id !== id));
+    toast.success('Trip deleted');
+    if (selectedTripId === id) {
+      setActiveModal('trips');
+      setSelectedTripId(null);
+    }
   };
 
   const handleOpenTripDetails = (id: string) => {
@@ -57,6 +85,13 @@ export default function App() {
     setSelectedTripId(tripId);
   };
 
+  const handleRemovePoiFromTrip = (tripId: string, poiId: string) => {
+    setTrips(trips.map(t => 
+      t.id === tripId ? { ...t, pois: t.pois.filter(id => id !== poiId) } : t
+    ));
+    toast.success('Place removed from trip');
+  };
+
   const handleSwipeSave = (poiId: string) => {
     const poi = mockPois.find(p => p.id === poiId);
     const targetTrip = trips[0];
@@ -80,6 +115,7 @@ export default function App() {
       <MapView 
         pois={mockPois} 
         onPoiClick={handlePoiClick} 
+        selectedPoiId={selectedPoiId}
       />
 
       {/* Main Trigger Button (Bottom Left) - Hidden if modal is open */}
@@ -106,6 +142,7 @@ export default function App() {
                 onClose={handleCloseModal}
                 onOpenNewTrip={handleOpenNewTrip}
                 onOpenTripDetails={handleOpenTripDetails}
+                onDeleteTrip={handleDeleteTrip}
               />
             )}
 
@@ -124,6 +161,7 @@ export default function App() {
                 onToggleExpand={handleToggleExpand}
                 onClose={() => setActiveModal('trips')}
                 onPoiClick={handlePoiClick}
+                onRemovePoi={(poiId) => handleRemovePoiFromTrip(selectedTripId, poiId)}
               />
             )}
 
@@ -133,6 +171,7 @@ export default function App() {
                 trips={trips}
                 onClose={handleCloseModal}
                 onAddToTrip={handleAddPoiToTrip}
+                onViewOnMap={() => setActiveModal('none')}
               />
             )}
 

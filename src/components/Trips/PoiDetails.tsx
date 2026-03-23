@@ -7,9 +7,10 @@ interface PoiDetailsProps {
   trips: Trip[];
   onClose: () => void;
   onAddToTrip: (tripId: string, poiId: string) => void;
+  onViewOnMap: () => void;
 }
 
-export function PoiDetails({ poi, trips, onClose, onAddToTrip }: PoiDetailsProps) {
+export function PoiDetails({ poi, trips, onClose, onAddToTrip, onViewOnMap }: PoiDetailsProps) {
   if (!poi) return null;
 
   return (
@@ -77,6 +78,13 @@ export function PoiDetails({ poi, trips, onClose, onAddToTrip }: PoiDetailsProps
         </div>
 
         <div className="flex items-center justify-around py-4 border-y border-[#333333] mb-6">
+          <button 
+            onClick={onViewOnMap}
+            className="flex flex-col items-center gap-2 text-gray-400 hover:text-white transition-colors"
+          >
+            <div className="p-3 bg-blue-600/20 text-blue-400 rounded-full"><MapPin size={20} /></div>
+            <span className="text-xs font-medium">View Map</span>
+          </button>
           <button className="flex flex-col items-center gap-2 text-gray-400 hover:text-white transition-colors">
             <div className="p-3 bg-[#2A2A2A] rounded-full"><Globe size={20} /></div>
             <span className="text-xs font-medium">Website</span>
@@ -84,10 +92,6 @@ export function PoiDetails({ poi, trips, onClose, onAddToTrip }: PoiDetailsProps
           <button className="flex flex-col items-center gap-2 text-gray-400 hover:text-white transition-colors">
             <div className="p-3 bg-[#2A2A2A] rounded-full"><Phone size={20} /></div>
             <span className="text-xs font-medium">Call</span>
-          </button>
-          <button className="flex flex-col items-center gap-2 text-gray-400 hover:text-white transition-colors">
-            <div className="p-3 bg-[#2A2A2A] rounded-full"><MessageSquare size={20} /></div>
-            <span className="text-xs font-medium">Review</span>
           </button>
         </div>
 

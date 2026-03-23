@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { Heart, X, Navigation, Star, MapPin, Clock } from 'lucide-react';
 import { POI } from '../../types';
 
@@ -13,6 +13,22 @@ export function SwipeView({ pois, onSave, onSkip }: SwipeViewProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
 
+  const x = useMotionValue(0);
+  const rotate = useTransform(x, [-200, 200], [-15, 15]);
+  const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
+
+  const handleDragEnd = (event: any, info: any) => {
+    const threshold = 100;
+    if (info.offset.x > threshold) {
+      handleSwipe('right');
+    } else if (info.offset.x < -threshold) {
+      handleSwipe('left');
+    } else {
+      // Reset position if not swiped far enough
+      x.set(0);
+    }
+  };
+
   const handleSwipe = (dir: 'left' | 'right') => {
     setDirection(dir);
     setTimeout(() => {
@@ -23,6 +39,7 @@ export function SwipeView({ pois, onSave, onSkip }: SwipeViewProps) {
       }
       setCurrentIndex(prev => prev + 1);
       setDirection(null);
+      x.set(0); // Reset x for the next card
     }, 300);
   };
 
@@ -45,6 +62,10 @@ export function SwipeView({ pois, onSave, onSkip }: SwipeViewProps) {
       <AnimatePresence>
         <motion.div
           key={currentPoi.id}
+          style={{ x, rotate, opacity }}
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          onDragEnd={handleDragEnd}
           initial={{ scale: 0.95, opacity: 0, y: 20 }}
           animate={{ 
             scale: 1, 
@@ -55,7 +76,7 @@ export function SwipeView({ pois, onSave, onSkip }: SwipeViewProps) {
           }}
           exit={{ opacity: 0, scale: 0.9 }}
           transition={{ duration: 0.3 }}
-          className="w-full max-w-md h-[70vh] bg-[#222222] rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-[#333333] relative"
+          className="w-full max-w-md h-[70vh] bg-[#222222] rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-[#333333] relative cursor-grab active:cursor-grabbing"
         >
           {/* Image Section */}
           <div className="relative h-2/3 w-full">
