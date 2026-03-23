@@ -1,0 +1,5 @@
+{
+  "name": "Travel Explorer App",
+  "description": "A travel application for discovering points of interest and planning trips.",
+  "requestFramePermissions": ["geolocation"]
+}
