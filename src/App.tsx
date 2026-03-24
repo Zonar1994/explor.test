@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Route, X, Maximize2, Minimize2, Layers, SlidersHorizontal } from 'lucide-react';
+import { Route, X, Maximize2, Minimize2, Layers, SlidersHorizontal, CheckCircle2 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { MapView } from './components/Map/MapView';
 import { TripsList } from './components/Trips/TripsList';
@@ -75,8 +75,9 @@ export default function App() {
 
   const handleOpenTrips = () => setActiveModal('trips');
   const handleCloseModal = () => {
-    setActiveModal('none');
+    setActiveModal('trips');
     setIsExpanded(false);
+    setSelectedTripId(null);
     setSwipeCategoryFilter(null);
     setSwipeTargetType(null);
   };
@@ -161,6 +162,7 @@ export default function App() {
           name: poi?.name || 'Place',
           lat: poi?.lat,
           lng: poi?.lng,
+          image: poi?.image,
           group,
           dayIndex: selectedDayIndex
         }] 
@@ -171,11 +173,50 @@ export default function App() {
     setSelectedTripId(tripId);
   };
 
-  const handleRemovePoiFromTrip = (tripId: string, poiId: string) => {
+  const handleBatchAddPois = (tripId: string, poiIds: string[]) => {
+    if (poiIds.length === 0) {
+      setActiveModal('trip-details');
+      return;
+    }
+    
+    // Process them all
+    const updatedTrips = [...trips];
+    const tripIdx = updatedTrips.findIndex(t => t.id === tripId);
+    if (tripIdx === -1) return;
+
+    const newItems = poiIds.map(id => {
+      const poi = osmPois.find(p => p.id === id);
+      return { 
+        id: Math.random().toString(36).substring(7), 
+        type: 'poi', 
+        poiId: id,
+        name: poi?.name || 'Place',
+        lat: poi?.lat,
+        lng: poi?.lng,
+        image: poi?.image,
+        group: swipeTargetType as any,
+        dayIndex: selectedDayIndex
+      };
+    });
+
+    updatedTrips[tripIdx] = {
+      ...updatedTrips[tripIdx],
+      items: [...updatedTrips[tripIdx].items, ...newItems]
+    };
+
+    setTrips(updatedTrips);
+    setActiveModal('trip-details');
+    toast.success(`Successfully added ${poiIds.length} places to your itinerary!`, {
+      icon: <CheckCircle2 className="text-green-500" />,
+      duration: 3000
+    });
+  };
+
+  const handleRemoveItemFromTrip = (tripId: string, itemId: string) => {
     setTrips(trips.map(t => 
-      t.id === tripId ? { ...t, items: t.items.filter(item => item.poiId !== poiId) } : t
+      t.id === tripId ? { ...t, items: t.items.filter(item => item.id !== itemId) } : t
     ));
-    toast.success('Place removed from trip');
+    toast.success('Item removed from trip');
   };
 
   const handleWaypointSet = async (lat: number, lng: number) => {
@@ -218,8 +259,8 @@ export default function App() {
     if (type === 'break' || type === 'accommodation' || type === 'entertainment') {
       const categoryMap: Record<string, string> = {
         'break': 'Food',
-        'accommodation': 'Stay',
-        'entertainment': 'Fun'
+        'entertainment': 'Fun',
+        'accommodation': 'Stay'
       };
       setSwipeCategoryFilter(categoryMap[type]);
       setSwipeTargetType(type);
@@ -276,24 +317,16 @@ export default function App() {
         <MapView 
           pois={osmPois} 
           tripPois={selectedTrip ? selectedTrip.items.map(item => {
-            if (item.type === 'poi' && item.poiId) {
-              const poi = osmPois.find(p => p.id === item.poiId);
-              if (poi) return { ...poi, id: item.id }; // Use trip item ID for uniqueness
-              // Fallback to basic data
+            if (item.lat && item.lng) {
               return { 
                 id: item.id, 
+                poiId: item.poiId,
                 name: item.name || 'Place', 
-                lat: (item as any).lat || 0, 
-                lng: (item as any).lng || 0 
-              } as POI;
-            }
-            if ((item as any).lat && (item as any).lng) {
-              return { 
-                id: item.id, 
-                name: item.name, 
-                lat: (item as any).lat, 
-                lng: (item as any).lng 
-              } as POI;
+                lat: item.lat, 
+                lng: item.lng,
+                image: item.image,
+                category: (item.group || 'Fun') as any
+              } as unknown as POI;
             }
             return null;
           }).filter(Boolean) as POI[] : []}
@@ -417,12 +450,14 @@ export default function App() {
                     onToggleMapSplit={() => {}} 
                     onClose={handleCloseModal}
                     onPoiClick={handlePoiClick}
-                    onRemovePoi={(poiId) => handleRemovePoiFromTrip(selectedTripId!, poiId)}
+                    onRemovePoi={(itemId) => handleRemoveItemFromTrip(selectedTripId!, itemId)}
                     onAddCustomEvent={(type) => handleAddCustomEvent(selectedTripId!, type)}
                     mapType={mapType}
                     onMapTypeToggle={toggleMapType}
                     setMapType={setMapType}
                     onWaypointSet={handleWaypointSet}
+                    onPoiHover={setSelectedPoiId}
+                    selectedPoiId={selectedPoiId}
                   />
               )}
 
@@ -475,8 +510,9 @@ export default function App() {
                     <div className="flex-1">
                       <SwipeView 
                         pois={osmPois}
-                        onSave={(id) => handleAddPoiToTrip(selectedTripId || trips[0]?.id, id, swipeTargetType as any)}
+                        onSave={() => {}} // Not used in batch mode but kept for prop compatibility
                         onSkip={() => {}}
+                        onFinish={(ids) => handleBatchAddPois(selectedTripId || trips[0]?.id, ids)}
                         onViewPoiChange={setSelectedPoiId}
                         activeFilter={swipeCategoryFilter || undefined}
                         onClearFilter={() => setSwipeCategoryFilter(null)}

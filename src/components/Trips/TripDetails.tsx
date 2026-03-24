@@ -20,6 +20,8 @@ interface TripDetailsProps {
   mapType?: string;
   onMapTypeToggle?: () => void;
   setMapType?: (type: 'voyager' | 'light' | 'dark' | 'satellite' | 'hybrid') => void;
+  onPoiHover?: (id: string | null) => void;
+  selectedPoiId?: string | null;
 }
 
 export function TripDetails({
@@ -38,13 +40,50 @@ export function TripDetails({
   onMapTypeToggle,
   setMapType,
   selectedDayIndex,
-  onDayChange
+  onDayChange,
+  onPoiHover,
+  selectedPoiId
 }: TripDetailsProps) {
   const [visualMode, setVisualMode] = React.useState<'detailed' | 'compact'>('detailed');
   const [showAddMenuIndex, setShowAddMenuIndex] = React.useState<number | null>(null);
   const [showBottomAddMenu, setShowBottomAddMenu] = React.useState(false);
   const [showMapMenu, setShowMapMenu] = React.useState(false);
   const timelineRefs = React.useRef<(HTMLDivElement | null)[]>([]);
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      if (!isExpanded) return; // Only sync if expanded or maybe even if not? User said "when you scroll through it"
+
+      const containerRect = container.getBoundingClientRect();
+      const centerY = containerRect.top + containerRect.height / 3; // Focus on items near the top third
+
+      let bestPoiId: string | null = null;
+      let minDistance = Infinity;
+
+      const poiElements = container.querySelectorAll('[data-poi-id]');
+      poiElements.forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        const elementCenter = rect.top + rect.height / 2;
+        const distance = Math.abs(elementCenter - centerY);
+        
+        if (distance < minDistance && distance < 200) {
+          minDistance = distance;
+          bestPoiId = el.getAttribute('data-poi-id');
+        }
+      });
+
+      if (bestPoiId) {
+        onPoiHover?.(bestPoiId);
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [onPoiHover, isExpanded]);
 
   const handleDayTabClick = (idx: number) => {
     onDayChange(idx);
@@ -99,8 +138,8 @@ export function TripDetails({
         <div className="grid grid-cols-3 gap-3 mb-3">
           {[
             { type: 'break', icon: Coffee, color: 'text-yellow-400', label: 'Break' },
-            { type: 'accommodation', icon: BedDouble, color: 'text-indigo-400', label: 'Stay' },
-            { type: 'entertainment', icon: TicketIcon, color: 'text-pink-400', label: 'Fun' }
+            { type: 'entertainment', icon: TicketIcon, color: 'text-pink-400', label: 'Fun' },
+            { type: 'accommodation', icon: BedDouble, color: 'text-indigo-400', label: 'Stay' }
           ].map(({ type, icon: Icon, color, label }) => (
             <button
               key={type}
@@ -161,7 +200,15 @@ export function TripDetails({
                 <div className={`bg-[#222] rounded-2xl p-4 border ${eventStyles.border} shadow-xl relative overflow-hidden group mb-6`}>
                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ${eventStyles.border.replace('border', 'bg').replace('/30', '/5')}`} />
                    <div className="relative z-10">
-                      <h4 className="text-white font-black tracking-tight text-[15px]">{item.name || `Scheduled ${eventStyles.label}`}</h4>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-white font-black tracking-tight text-[15px]">{item.name || `Scheduled ${eventStyles.label}`}</h4>
+                        <button 
+                          onClick={() => onRemovePoi(item.id)}
+                          className="p-1.5 hover:bg-white/10 rounded-full text-gray-500 hover:text-red-400 transition-all opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                       <div className="flex items-center gap-3 text-[11px] text-gray-400 mt-2 font-bold uppercase tracking-wider">
                         <span className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-lg"><Clock size={12} className={eventStyles.color} /> {item.duration || '1 hr'}</span>
                       </div>
@@ -204,12 +251,28 @@ export function TripDetails({
                 <div className="h-px bg-white/10 flex-1 mx-3" />
               </div>
 
-              <motion.div layout className="relative overflow-hidden pb-6">
+              <motion.div 
+                layout 
+                className="relative overflow-hidden pb-6"
+                drag="x"
+                dragDirectionLock
+                dragConstraints={{ left: -100, right: 0 }}
+                onDragEnd={(_, info) => {
+                  if (info.offset.x < -60) {
+                    onRemovePoi(item.id);
+                  }
+                }}
+              >
+                {/* Delete background */}
+                <div className="absolute inset-y-0 right-0 w-24 bg-red-500/10 rounded-2xl flex items-center justify-center -z-10">
+                   <Trash2 size={20} className="text-red-500" />
+                </div>
+
                 {visualMode === 'detailed' ? (
-                  <div className="flex gap-3 mb-3">
+                  <div className="flex gap-3 mb-3 bg-[#1A1A1A]">
                     <div className={`w-1 rounded-full ${groupColor.replace('text', 'bg')}`} />
-                    <div className={`flex-1 bg-[#222] rounded-2xl overflow-hidden border ${groupStyles} relative shadow-xl`}>
-                      <div className="relative h-48">
+                    <div data-poi-id={poi.id} className={`flex-1 bg-[#222] rounded-2xl overflow-hidden border ${selectedPoiId === poi.id ? 'border-[#3B82F6] shadow-[0_0_20px_rgba(59,130,246,0.2)]' : groupStyles} relative shadow-xl transition-all duration-300`}>
+                      <div className="relative h-48" onClick={() => onPoiClick(poi.id)}>
                         <img src={poi.image} alt={poi.name} className="w-full h-full object-cover select-none" />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#222] via-transparent to-transparent opacity-80" />
                         <div className="absolute top-3 left-3 flex flex-wrap gap-2 z-10">
@@ -230,7 +293,7 @@ export function TripDetails({
                             <Globe size={16} className="text-gray-500 hover:text-white transition-colors cursor-pointer" />
                             <MapPin size={16} className="text-gray-500 hover:text-white transition-colors cursor-pointer" />
                           </div>
-                          <button className="p-2 hover:bg-white/5 rounded-full transition-all text-gray-500 hover:text-red-400" onClick={(e) => { e.stopPropagation(); onRemovePoi(poi.id); }}>
+                          <button className="p-2 hover:bg-white/5 rounded-full transition-all text-gray-500 hover:text-red-400" onClick={(e) => { e.stopPropagation(); onRemovePoi(item.id); }}>
                             <Trash2 size={16} />
                           </button>
                         </div>
@@ -238,10 +301,15 @@ export function TripDetails({
                     </div>
                   </div>
                 ) : (
-                  <motion.div className={`flex gap-3 mb-2 bg-[#222] p-4 rounded-xl border ${groupStyles} active:bg-[#2A2A2A] transition-colors relative`}>
-                    <div className="flex flex-1 items-center justify-between cursor-pointer" onClick={() => onPoiClick(poi.id)}>
-                      <h4 className="text-[14px] font-bold text-white hover:text-blue-400 transition-colors">{poi.name}</h4>
-                      <X size={16} className="text-gray-600 hover:text-red-400 transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); onRemovePoi(poi.id); }} />
+                  <motion.div data-poi-id={poi.id} className={`flex gap-3 mb-2 bg-[#222] p-4 rounded-xl border ${selectedPoiId === poi.id ? 'border-[#3B82F6]' : groupStyles} active:bg-[#2A2A2A] transition-colors relative`} onClick={() => onPoiClick(poi.id)}>
+                    <div className="flex flex-1 items-center justify-between">
+                      <h4 className="text-[14px] font-bold text-white hover:text-blue-400 transition-colors pointer-events-none">{poi.name}</h4>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); onRemovePoi(item.id); }}
+                        className="p-1.5 hover:bg-white/10 rounded-full text-gray-500 hover:text-red-400 transition-all"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </motion.div>
                 )}
@@ -320,7 +388,7 @@ export function TripDetails({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 custom-scrollbar pb-32">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 custom-scrollbar pb-32">
         <h3 className="text-[15px] font-bold text-white mb-3 leading-tight">{trip.name}!!</h3>
         
         {/* Date Tabs */}
@@ -355,36 +423,32 @@ export function TripDetails({
                 <h4 className="text-[16px] font-black text-white mb-2 uppercase tracking-tight">Set Start Point</h4>
                 <p className="text-gray-400 text-[12px] mb-6 leading-relaxed">Choose where your journey begins. Search for a location or pick one manually on the map.</p>
                 
-                <div className="relative mb-6">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">
-                    <MapPin size={18} />
+                <div className="space-y-4">
+                  <div className="relative">
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">
+                      <MapPin size={16} />
+                    </div>
+                    <input 
+                      type="text" 
+                      placeholder="Enter start location..."
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-[13px] font-bold text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500/50 transition-all"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          onWaypointSet?.(51.5583, 5.0833);
+                        }
+                      }}
+                    />
                   </div>
-                  <input 
-                    type="text" 
-                    placeholder="Search city, airport or area..."
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-[14px] font-bold text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500/50 transition-all shadow-inner"
-                  />
-                  
-                  {/* Mock Autocomplete Rows */}
-                  <div className="mt-4 space-y-2">
-                    {[
-                      { city: 'Tilburg', area: 'Talent Square, Noord-Brabant', lat: 51.5583, lng: 5.0833 },
-                      { city: 'Paris', area: 'Charles de Gaulle (CDG)', lat: 49.0097, lng: 2.5479 },
-                      { city: 'Amsterdam', area: 'Central Station', lat: 52.3791, lng: 4.8994 }
-                    ].map((loc, i) => (
-                      <div 
-                        key={i} 
-                        onClick={() => onWaypointSet?.(loc.lat, loc.lng)}
-                        className="flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl cursor-pointer transition-colors border border-transparent hover:border-white/5"
-                      >
-                        <Globe size={14} className="text-blue-400" />
-                        <div>
-                          <p className="text-[13px] font-bold text-white">{loc.city}</p>
-                          <p className="text-[10px] text-gray-500 font-medium">{loc.area}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+
+                  <button 
+                    onClick={() => {
+                      // Mock current location for now
+                      onWaypointSet?.(51.5583, 5.0833);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-500 text-white rounded-xl text-[12px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-blue-500/20"
+                  >
+                    <Navigation size={14} className="fill-white" /> Use Current Location
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -455,8 +519,8 @@ export function TripDetails({
                       <div className="grid grid-cols-3 gap-3 mb-3">
                         {[
                           { type: 'break', icon: Coffee, color: 'text-yellow-400', label: 'Break' },
-                          { type: 'accommodation', icon: BedDouble, color: 'text-indigo-400', label: 'Stay' },
-                          { type: 'entertainment', icon: TicketIcon, color: 'text-pink-400', label: 'Fun' }
+                          { type: 'entertainment', icon: TicketIcon, color: 'text-pink-400', label: 'Fun' },
+                          { type: 'accommodation', icon: BedDouble, color: 'text-indigo-400', label: 'Stay' }
                         ].map(({ type, icon: Icon, color, label }) => (
                           <button
                             key={type}
@@ -548,11 +612,11 @@ export function TripDetails({
               className="bg-[#1A1A1A] rounded-3xl border border-white/10 p-5 shadow-2xl"
             >
               <div className="grid grid-cols-3 gap-3 mb-4">
-                {[
-                  { type: 'break', icon: Coffee, color: 'text-yellow-400', label: 'Break' },
-                  { type: 'accommodation', icon: BedDouble, color: 'text-indigo-400', label: 'Stay' },
-                  { type: 'entertainment', icon: TicketIcon, color: 'text-pink-400', label: 'Fun' }
-                ].map(({ type, icon: Icon, color, label }) => (
+                  {[
+                    { type: 'break', icon: Coffee, color: 'text-yellow-400', label: 'Break' },
+                    { type: 'entertainment', icon: TicketIcon, color: 'text-pink-400', label: 'Fun' },
+                    { type: 'accommodation', icon: BedDouble, color: 'text-indigo-400', label: 'Stay' }
+                  ].map(({ type, icon: Icon, color, label }) => (
                   <button
                     key={type}
                     onClick={() => {

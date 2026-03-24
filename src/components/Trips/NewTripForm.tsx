@@ -130,7 +130,7 @@ export function NewTripForm({ onClose, onCreate }: NewTripFormProps) {
         <div className="mt-auto">
           <button 
             type="submit"
-            className="w-full py-3 bg-transparent hover:bg-white/[0.03] text-gray-200 hover:text-white font-bold rounded-xl transition-all border border-white/10 shadow-lg active:scale-[0.98] text-[14px]"
+            className="w-full py-3.5 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-2xl transition-all shadow-xl shadow-blue-500/20 active:scale-[0.98] text-[15px] uppercase tracking-widest"
           >
             Create Trip
           </button>

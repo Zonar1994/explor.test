@@ -152,9 +152,9 @@ export function TripsList({
                         onDeleteTrip(trip.id);
                       }
                     }}
-                    className={`p-2 transition-colors ${isArchiveView ? 'text-red-500 hover:bg-red-500/10' : 'text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100'} rounded-lg`}
+                    className={`p-2 transition-colors ${isArchiveView ? 'text-red-400 hover:bg-red-500/10' : 'text-gray-500 hover:text-red-400'} rounded-lg`}
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={16} />
                   </button>
                   {!isArchiveView && <ChevronRight size={18} className="text-gray-400 group-hover:translate-x-0.5 transition-transform" />}
                 </div>

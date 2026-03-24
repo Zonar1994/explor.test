@@ -102,33 +102,6 @@ export function ProfileSettings({ isOpen, onClose, onSave, initialPrefs, isOnboa
                 </div>
               </div>
 
-              {/* Accommodation */}
-              <div className="bg-[#1A1A1A] p-5 rounded-2xl border border-white/5 shadow-xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
-                  <BedDouble size={100} />
-                </div>
-                <div className="flex items-center gap-3 mb-4 relative z-10">
-                  <div className="p-2 bg-indigo-400/20 text-indigo-400 rounded-xl">
-                    <BedDouble size={20} />
-                  </div>
-                  <h3 className="text-white font-bold text-lg">Accommodation</h3>
-                </div>
-                <div className="relative z-10 space-y-2">
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Preferred Stay Type</label>
-                  <select 
-                    value={prefs.accommodationType}
-                    onChange={(e) => setPrefs({ ...prefs, accommodationType: e.target.value })}
-                    className="w-full bg-[#2A2A2A] text-white p-3.5 rounded-xl border border-white/5 focus:border-blue-500/50 outline-none appearance-none cursor-pointer"
-                  >
-                    <option>Boutique Hotels</option>
-                    <option>Budget Hostels</option>
-                    <option>Luxury Resorts</option>
-                    <option>Camping & Outdoor</option>
-                    <option>Private Rentals</option>
-                  </select>
-                </div>
-              </div>
-
               {/* Entertainment */}
               <div className="bg-[#1A1A1A] p-5 rounded-2xl border border-white/5 shadow-xl relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
@@ -152,6 +125,33 @@ export function ProfileSettings({ isOpen, onClose, onSave, initialPrefs, isOnboa
                     <option>Active Tours & Sports</option>
                     <option>Nightlife & Clubbing</option>
                     <option>Family Friendly</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Accommodation */}
+              <div className="bg-[#1A1A1A] p-5 rounded-2xl border border-white/5 shadow-xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
+                  <BedDouble size={100} />
+                </div>
+                <div className="flex items-center gap-3 mb-4 relative z-10">
+                  <div className="p-2 bg-indigo-400/20 text-indigo-400 rounded-xl">
+                    <BedDouble size={20} />
+                  </div>
+                  <h3 className="text-white font-bold text-lg">Accommodation</h3>
+                </div>
+                <div className="relative z-10 space-y-2">
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Preferred Stay Type</label>
+                  <select 
+                    value={prefs.accommodationType}
+                    onChange={(e) => setPrefs({ ...prefs, accommodationType: e.target.value })}
+                    className="w-full bg-[#2A2A2A] text-white p-3.5 rounded-xl border border-white/5 focus:border-blue-500/50 outline-none appearance-none cursor-pointer"
+                  >
+                    <option>Boutique Hotels</option>
+                    <option>Budget Hostels</option>
+                    <option>Luxury Resorts</option>
+                    <option>Camping & Outdoor</option>
+                    <option>Private Rentals</option>
                   </select>
                 </div>
               </div>

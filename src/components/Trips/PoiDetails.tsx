@@ -74,8 +74,8 @@ export function PoiDetails({ poi, trips, activeTripId, allPois, hideAddButton, o
   return (
     <div className="flex flex-col h-full bg-[#121212] text-white overflow-hidden relative">
       <div className="flex justify-between items-center px-4 py-2.5 border-b border-white/5 bg-[#121212] z-50">
-        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-          <ArrowLeft size={20} />
+        <button onClick={onClose} className="p-3 -ml-2 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center group" title="Back">
+          <ArrowLeft size={22} className="text-gray-300 group-hover:text-white" />
         </button>
         <div className="text-center">
           <h2 className="text-[15px] font-bold text-white leading-tight">
@@ -148,8 +148,8 @@ export function PoiDetails({ poi, trips, activeTripId, allPois, hideAddButton, o
                 <div className="grid grid-cols-3 gap-3 mb-4">
                   {[
                     { type: 'break', icon: Coffee, color: 'text-yellow-400', label: 'Break' },
-                    { type: 'accommodation', icon: BedDouble, color: 'text-indigo-400', label: 'Stay' },
-                    { type: 'entertainment', icon: TicketIcon, color: 'text-pink-400', label: 'Fun' }
+                    { type: 'entertainment', icon: TicketIcon, color: 'text-pink-400', label: 'Fun' },
+                    { type: 'accommodation', icon: BedDouble, color: 'text-indigo-400', label: 'Stay' }
                   ].map(({ type, icon: Icon, color, label }) => (
                     <button
                       key={type}

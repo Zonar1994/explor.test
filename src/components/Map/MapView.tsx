@@ -75,7 +75,7 @@ function MapController({ center, zoom, offsetY = 0 }: { center: [number, number]
     lastPosRef.current = { lat: center[0], lng: center[1], zoom, offsetY };
 
     if (zoom) {
-      map.flyTo(finalCenter, zoom, { duration: 1.5 });
+      map.flyTo(finalCenter, zoom, { duration: 0.8 });
     } else {
       map.setView(finalCenter, map.getZoom());
     }
@@ -160,16 +160,18 @@ export function MapView({
 
   // Offset calculation to push markers up to the visible top portion of the screen
   const getOffsetY = () => {
-    if (offsetYOverride && offsetYOverride > 0) {
-      // The override comes from App.tsx as a screen proportion (e.g. 0.8)
-      // We want to center it at (1 - Proportion) / 2 from the top.
-      const visiblePortion = 1 - (offsetYOverride / 100);
-      const targetCenterPx = (visiblePortion / 2) * window.innerHeight;
-      return (window.innerHeight / 2) - targetCenterPx;
+    // If modal is open, we want the center to be in the middle of the VISIBLE portion
+    // visible proportion = 1 - (modalHeight / 100)
+    // target middle = (visible proportion / 2)
+    // offset = (0.5 - target middle) * height
+    if (isModalOpen) {
+      const height = window.innerHeight;
+      const proportion = (offsetYOverride || 62) / 100;
+      const visiblePortion = 1 - proportion;
+      const targetMiddleFromTop = visiblePortion / 2;
+      return (0.5 - targetMiddleFromTop) * height;
     }
-    if (!isModalOpen) return 0;
-    if (isDiscoverOpen) return window.innerHeight * 0.38;
-    return window.innerHeight * 0.3;
+    return 0;
   };
 
   const mapUrls = {
@@ -227,7 +229,7 @@ export function MapView({
         {selectedPoiId && pois.find(p => p.id === selectedPoiId) && (
           <MapController 
             center={[pois.find(p => p.id === selectedPoiId)!.lat, pois.find(p => p.id === selectedPoiId)!.lng]} 
-            zoom={16} 
+            zoom={18} 
             offsetY={getOffsetY()} 
           />
         )}
@@ -235,7 +237,7 @@ export function MapView({
         {!selectedPoiId && tripPois && tripPois.length === 1 && (
           <MapController 
             center={[tripPois[0].lat, tripPois[0].lng]} 
-            zoom={14} 
+            zoom={17} 
           />
         )}
 

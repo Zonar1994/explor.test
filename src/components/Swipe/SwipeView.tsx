@@ -3,25 +3,27 @@ import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/re
 import { POI } from '../../types';
 import { fetchWeather, WeatherData } from '../../utils/weather';
 import { WeatherForecastModal } from '../Trips/PoiCard';
-import { MapPin, Clock, Undo2, Star, CheckCircle2, Ticket, Thermometer, Heart, X } from 'lucide-react';
+import { MapPin, Clock, Undo2, Star, CheckCircle2, Ticket, Thermometer, Heart, X, ChevronRight } from 'lucide-react';
 
 interface SwipeViewProps {
   pois: Array<POI>;
   onSave: (poiId: string) => void;
   onSkip: (poiId: string) => void;
+  onFinish?: (poiIds: string[]) => void;
   onViewPoiChange?: (poiId: string) => void;
   activeFilter?: string;
   onClearFilter?: () => void;
   hideActions?: boolean;
 }
 
-export function SwipeView({ pois, onSave, onSkip, onViewPoiChange, activeFilter, onClearFilter, hideActions }: SwipeViewProps) {
+export function SwipeView({ pois, onSave, onSkip, onFinish, onViewPoiChange, activeFilter, onClearFilter, hideActions }: SwipeViewProps) {
   const filteredPois = activeFilter 
     ? pois.filter(p => p.category?.toLowerCase() === activeFilter.toLowerCase())
     : pois;
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
+  const [likedPois, setLikedPois] = useState<string[]>([]);
   const [currentWeather, setCurrentWeather] = useState<WeatherData | null>(null);
   const [showWeatherModal, setShowWeatherModal] = useState(false);
   
@@ -50,19 +52,28 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange, activeFilter,
 
   const handleSwipe = useCallback((dir: 'left' | 'right') => {
     setDirection(dir);
-    // Trigger action immediately or after a short delay for smooth transition
+    
+    // If liked, add to local collection instead of immediate save
     if (dir === 'right') {
-      onSave(filteredPois[currentIndex].id);
-    } else {
-      onSkip(filteredPois[currentIndex].id);
+      const poiId = filteredPois[currentIndex].id;
+      if (!likedPois.includes(poiId)) {
+        setLikedPois(prev => [...prev, poiId]);
+      }
     }
     
+    // We delay the slide change slightly to let the animation play
     setTimeout(() => {
       setCurrentIndex(prev => prev + 1);
       setDirection(null);
       x.set(0); 
-    }, 200);
-  }, [currentIndex, onSave, onSkip, filteredPois, x]);
+    }, 150);
+  }, [currentIndex, filteredPois, likedPois, x]);
+
+  useEffect(() => {
+    if (activePoi && onViewPoiChange) {
+      onViewPoiChange(activePoi.id);
+    }
+  }, [activePoi, onViewPoiChange]);
 
   const handleUndo = useCallback(() => {
     if (currentIndex > 0) {
@@ -88,11 +99,38 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange, activeFilter,
   if (currentIndex >= filteredPois.length) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-[#121212]">
-        <div className="w-24 h-24 bg-[#2A2A2A] rounded-full flex items-center justify-center mb-6 border border-white/5">
-          <MapPin size={40} className="text-gray-500" />
+        <div className="w-24 h-24 bg-[#2A2A2A] rounded-full flex items-center justify-center mb-6 border border-white/5 relative">
+          <MapPin size={40} className="text-blue-500" />
+          {likedPois.length > 0 && (
+            <div className="absolute -top-1 -right-1 w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center border-4 border-[#121212] text-[12px] font-black text-white">
+              {likedPois.length}
+            </div>
+          )}
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2 font-sans tracking-tight">You're all caught up!</h2>
-        <p className="text-gray-400 max-w-[240px] leading-relaxed">Check back later for more places to discover, or explore the map.</p>
+        <h2 className="text-2xl font-bold text-white mb-2 font-sans tracking-tight">
+          {likedPois.length > 0 ? 'Ready to plan?' : "You're all caught up!"}
+        </h2>
+        <p className="text-gray-400 max-w-[240px] leading-relaxed mb-8">
+          {likedPois.length > 0 
+            ? `You've liked ${likedPois.length} places. Add them to your trip to see your updated itinerary.` 
+            : "No new places found. Explore the map to find more inspiration."}
+        </p>
+        
+        {likedPois.length > 0 ? (
+          <button 
+            onClick={() => onFinish?.(likedPois)}
+            className="w-full py-4 bg-white text-black font-black rounded-2xl transition-all shadow-2xl shadow-blue-500/20 active:scale-95 text-[16px] flex items-center justify-center gap-2"
+          >
+            Add {likedPois.length} Places to Trip <ChevronRight size={18} />
+          </button>
+        ) : (
+          <button 
+            onClick={() => onFinish?.([])}
+            className="w-full py-4 bg-[#2A2A2A] text-white font-black rounded-2xl transition-all active:scale-95 text-[16px]"
+          >
+            Back to Trip
+          </button>
+        )}
       </div>
     );
   }
@@ -146,16 +184,18 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange, activeFilter,
                   rotate: isTop && direction === 'left' ? -35 : isTop && direction === 'right' ? 35 : 0
                 }}
                 exit={{ 
+                  x: direction === 'left' ? -1000 : direction === 'right' ? 1000 : 0,
                   opacity: 0, 
-                  scale: 0.9,
-                  transition: { duration: 0.15 }
+                  scale: 0.95,
+                  rotate: direction === 'left' ? -45 : direction === 'right' ? 45 : 0,
+                  transition: { duration: 0.4, ease: "easeOut" }
                 }}
                 whileTap={{ cursor: 'grabbing', scale: 0.98 }}
                 className="absolute inset-x-0 inset-y-0 w-full h-full bg-[#1A1A1A] rounded-[32px] shadow-2xl overflow-hidden flex flex-col border border-white/5 cursor-grab origin-bottom touch-none"
               >
                 {/* Image Section - Scrollable Gallery */}
                 <div className="relative h-[40%] w-full shrink-0 overflow-hidden group/gallery">
-                  <div className="flex h-full w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide">
+                  <div className="flex h-full w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide pointer-events-auto touch-pan-y">
                     {[poi.image, ...poi.moreImages].map((img, i) => (
                       <div key={i} className="min-w-full h-full snap-center relative">
                         <img 

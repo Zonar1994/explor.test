@@ -8,6 +8,9 @@ export type TripItem = {
   duration?: string; // e.g., '2 hrs'
   dayIndex?: number; // 0-indexed day the item belongs to
   group?: 'break' | 'accommodation' | 'entertainment'; 
+  lat?: number;
+  lng?: number;
+  image?: string;
 };
 
 export type Trip = {
