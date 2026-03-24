@@ -113,6 +113,7 @@ export default function App() {
           pois={mockPois} 
           onPoiClick={handlePoiClick} 
           selectedPoiId={selectedPoiId}
+          isModalOpen={activeModal !== 'none' && !isExpanded}
         />
       </div>
 
@@ -136,7 +137,7 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={`absolute inset-0 z-[2000] flex items-end justify-center pointer-events-none p-4 sm:p-6 pb-8`}
+            className={`absolute inset-0 z-[2000] flex items-end justify-center pointer-events-none px-2 pb-3`}
           >
             <motion.div 
               layout
@@ -146,7 +147,7 @@ export default function App() {
               transition={{ type: 'spring', damping: 28, stiffness: 260 }}
               className={`bg-[#1A1A1A] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col pointer-events-auto border border-white/10 ${
                 isExpanded ? 'fixed inset-0 w-full h-full rounded-none' : 
-                'w-[95%] sm:w-[450px] md:w-[420px] h-[65vh] rounded-[32px] max-h-[750px] relative'
+                'w-full max-w-[500px] h-[57vh] rounded-[24px] max-h-[600px] relative'
               }`}
             >
               {activeModal === 'trips' && (
@@ -194,24 +195,24 @@ export default function App() {
 
               {activeModal === 'swipe' && (
                 <div className="relative w-full h-full flex flex-col bg-[#121212]">
-                    <div className="flex justify-between items-center p-6 pb-4 border-b border-white/5 pt-8">
+                    <div className="flex justify-between items-center px-4 py-2.5 border-b border-white/5">
                       <div>
-                        <h2 className="text-[20px] font-bold text-white leading-tight">Discover Places</h2>
+                        <h2 className="text-[15px] font-bold text-white leading-tight">Discover Places</h2>
                         {selectedTripId && (
-                          <p className="text-[#3B82F6] text-xs font-bold tracking-widest uppercase mt-1">
+                          <p className="text-[#3B82F6] text-[10px] font-bold tracking-widest uppercase">
                             Refining: {trips.find(t => t.id === selectedTripId)?.name}
                           </p>
                         )}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1.5">
                         <button 
                           onClick={handleToggleExpand}
-                          className="p-2 bg-[#2A2A2A] rounded-full hover:bg-white/10 transition-colors flex items-center justify-center border border-white/5"
+                          className="p-1.5 bg-[#2A2A2A] rounded-full hover:bg-white/10 transition-colors flex items-center justify-center border border-white/5"
                         >
-                          {isExpanded ? <Minimize2 size={16} className="text-gray-300" /> : <Maximize2 size={16} className="text-gray-300" />}
+                          {isExpanded ? <Minimize2 size={14} className="text-gray-300" /> : <Maximize2 size={14} className="text-gray-300" />}
                         </button>
-                        <button onClick={() => setActiveModal(selectedTripId ? 'trip-details' : 'trips')} className="p-2 bg-[#2A2A2A] rounded-full hover:bg-white/10 transition-colors flex items-center justify-center border border-white/5 shadow-xl group">
-                          <X size={16} className="text-gray-400 group-hover:text-white transition-colors" />
+                        <button onClick={() => setActiveModal(selectedTripId ? 'trip-details' : 'trips')} className="p-1.5 bg-[#2A2A2A] rounded-full hover:bg-white/10 transition-colors flex items-center justify-center border border-white/5 shadow-xl group">
+                          <X size={14} className="text-gray-400 group-hover:text-white transition-colors" />
                         </button>
                       </div>
                     </div>

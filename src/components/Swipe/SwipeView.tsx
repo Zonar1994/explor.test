@@ -88,8 +88,8 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange }: SwipeViewPr
   const stack = pois.slice(currentIndex, currentIndex + 2);
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center p-4 pb-24 overflow-hidden bg-[#121212]">
-      <div className="relative w-full max-w-xl h-[80%] flex-1">
+    <div className="relative w-full h-full flex flex-col items-center justify-center p-2 pb-16 overflow-hidden bg-[#121212]">
+      <div className="relative w-full h-full">
         <AnimatePresence>
           {stack.map((poi, index) => {
             const isTop = index === 0;
@@ -124,51 +124,99 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange }: SwipeViewPr
                 }}
                 className="absolute inset-0 w-full h-full bg-[#1A1A1A] rounded-[32px] shadow-2xl overflow-hidden flex flex-col border border-white/5 cursor-grab active:cursor-grabbing origin-bottom"
               >
-                {/* Image Section - Reduced ratio to 1/2 to give more room for info */}
-                <div className="relative h-1/2 w-full shrink-0">
-                  <img 
-                    src={poi.image} 
-                    alt={poi.name} 
-                    className="w-full h-full object-cover select-none pointer-events-none"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] via-transparent to-transparent" />
+                {/* Image Section - Scrollable Gallery */}
+                <div className="relative h-[40%] w-full shrink-0 overflow-hidden group/gallery">
+                  <div className="flex h-full w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide">
+                    {[poi.image, ...poi.moreImages].map((img, i) => (
+                      <div key={i} className="min-w-full h-full snap-center relative">
+                        <img 
+                          src={img} 
+                          alt={`${poi.name} ${i}`} 
+                          className="w-full h-full object-cover select-none pointer-events-none"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] via-transparent to-transparent pointer-events-none" />
                   
+                  {/* Indicators */}
+                  <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
+                    {[poi.image, ...poi.moreImages].map((_, i) => (
+                      <div key={i} className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-white' : 'bg-white/30'}`} />
+                    ))}
+                  </div>
+
                   {/* Tags */}
-                  <div className="absolute top-5 left-5 flex flex-wrap gap-2">
+                  <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 pointer-events-none">
                     {poi.tags.slice(0, 3).map(tag => (
-                      <span key={tag} className="bg-black/60 backdrop-blur-md text-white text-[11px] px-4 py-2 rounded-2xl font-bold border border-white/10 tracking-tight">
+                      <span key={tag} className="bg-black/60 backdrop-blur-md text-white text-[10px] px-3 py-1 rounded-xl font-bold border border-white/10 tracking-tight">
                         {tag}
                       </span>
                     ))}
                   </div>
+
+                  {/* Weather Badge */}
+                  <div className="absolute top-3 right-3 bg-white/10 backdrop-blur-md border border-white/10 rounded-xl px-2.5 py-1 flex items-center gap-2 pointer-events-none">
+                    <span className="text-white font-bold text-[12px]">{poi.weather.temp}°</span>
+                    <span className="text-white/60 text-[10px] font-medium uppercase tracking-wider">{poi.weather.condition}</span>
+                  </div>
                 </div>
 
-                {/* Content Section - Increased space and information density */}
-                <div className="p-8 pb-10 flex-1 flex flex-col justify-start -mt-8 relative z-10 overflow-hidden">
-                  <h2 className="text-[28px] font-bold text-white leading-tight mb-3 tracking-tight">{poi.name}</h2>
+                {/* Content Section */}
+                <div className="px-5 pt-1 pb-16 flex-1 flex flex-col justify-start -mt-5 relative z-10 overflow-y-auto custom-scrollbar">
+                  <h2 className="text-[20px] font-bold text-white leading-tight mb-2 tracking-tight">{poi.name}</h2>
 
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-6 font-bold uppercase tracking-wider text-[11px]">
-                    <div className="flex items-center gap-2">
-                      <Star size={18} className="text-yellow-400 fill-yellow-400" />
-                      <span className="text-gray-100 text-[14px]">{poi.rating}</span>
-                      <span className="opacity-60">({poi.reviews} reviews)</span>
+                  <div className="flex flex-wrap items-center gap-3 mb-4 font-bold uppercase tracking-wider text-[10px]">
+                    <div className="flex items-center gap-1.5">
+                      <Star size={13} className="text-yellow-400 fill-yellow-400" />
+                      <span className="text-gray-100 text-[12px]">{poi.rating}</span>
+                      <span className="opacity-60 text-gray-400">({poi.reviews} reviews)</span>
                     </div>
-                    <div className="flex items-center gap-2 border-l border-white/10 pl-4">
-                      <Clock size={18} className="text-blue-400" />
-                      <span className="text-gray-200">{poi.hours}</span>
+                    <div className="flex items-center gap-1.5 border-l border-white/10 pl-3">
+                      <Clock size={13} className="text-blue-400" />
+                      <span className="text-gray-300 text-[11px] uppercase">{poi.hours}</span>
                     </div>
                   </div>
 
-                  <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                    <p className="text-gray-400 text-[16px] leading-relaxed font-medium">
+                  {/* Highlights */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {poi.keyHighlights.map((hl, i) => (
+                      <div key={i} className="bg-blue-500/10 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded-md border border-blue-500/20">
+                        {hl}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mb-6">
+                    <h3 className="text-gray-500 uppercase tracking-widest text-[9px] font-black mb-2">About</h3>
+                    <p className="text-gray-400 text-[13px] leading-relaxed font-medium">
                       {poi.description}
                     </p>
-                    {/* Additional simulated info to populate the larger space */}
-                    <div className="pt-4 border-t border-white/5 flex flex-col gap-3">
-                      <div className="flex items-center gap-3 text-gray-500 text-[13px]">
-                        <MapPin size={16} />
-                        <span className="truncate">Near Museum District, Downtown</span>
-                      </div>
+                  </div>
+
+                  {/* Reviews Section */}
+                  <div className="mt-2 border-t border-white/5 pt-4 mb-4">
+                    <h3 className="text-gray-500 uppercase tracking-widest text-[9px] font-black mb-3">Recent Reviews</h3>
+                    <div className="space-y-4">
+                      {poi.userReviews.length > 0 ? poi.userReviews.map((rev, i) => (
+                        <div key={i} className="flex gap-3 bg-white/5 p-3 rounded-2xl border border-white/5">
+                          <img src={rev.avatar} className="w-8 h-8 rounded-full border border-white/10 shrink-0" alt={rev.user} />
+                          <div className="flex-1">
+                            <div className="flex justify-between items-start mb-1">
+                              <span className="text-white font-bold text-[12px]">{rev.user}</span>
+                              <span className="text-gray-500 text-[9px]">{rev.date}</span>
+                            </div>
+                            <div className="flex gap-0.5 mb-1.5">
+                              {[...Array(5)].map((_, j) => (
+                                <Star key={j} size={8} className={j < rev.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-700"} />
+                              ))}
+                            </div>
+                            <p className="text-gray-300 text-[11px] leading-normal italic line-clamp-2">"{rev.comment}"</p>
+                          </div>
+                        </div>
+                      )) : (
+                        <p className="text-gray-600 text-[11px] italic">No reviews yet.</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -179,31 +227,31 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange }: SwipeViewPr
       </div>
 
       {/* Action Buttons with Gradient Shading */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#121212] via-[#121212]/90 to-transparent pointer-events-none z-30" />
-      <div className="absolute bottom-8 left-0 right-0 flex items-center justify-center gap-6 z-40 pointer-events-none">
+      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#121212] via-[#121212]/90 to-transparent pointer-events-none z-30" />
+      <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-4 z-40 pointer-events-none">
         <button 
           onClick={(e) => { e.stopPropagation(); handleUndo(); }}
           disabled={currentIndex === 0}
-          className={`w-12 h-12 bg-[#2A2A2A] rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/10 transition-all text-yellow-500 pointer-events-auto group ${
-            currentIndex === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-[#333333] hover:scale-110 active:scale-95"
+          className={`w-10 h-10 bg-[#2A2A2A] rounded-full flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.5)] border border-white/10 transition-all text-yellow-500 pointer-events-auto group ${
+            currentIndex === 0 ? "opacity-40 cursor-not-allowed" : "hover:bg-[#333333] hover:scale-110 active:scale-95"
           }`}
-          title="Undo last swipe (ArrowUp or Ctrl+Z)"
+          title="Undo last swipe"
         >
-          <Undo2 size={24} className={currentIndex > 0 ? "group-hover:-rotate-45 transition-transform" : ""} />
+          <Undo2 size={18} className={currentIndex > 0 ? "group-hover:-rotate-45 transition-transform" : ""} />
         </button>
         <button 
           onClick={(e) => { e.stopPropagation(); handleSwipe('left'); }}
-          className="w-16 h-16 bg-[#262626] rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/10 hover:bg-[#333333] hover:scale-110 active:scale-95 transition-all text-gray-400 pointer-events-auto group"
-          title="Skip (ArrowLeft)"
+          className="w-12 h-12 bg-[#262626] rounded-full flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.5)] border border-white/10 hover:bg-[#333333] hover:scale-110 active:scale-95 transition-all text-gray-400 pointer-events-auto group"
+          title="Skip"
         >
-          <X size={32} className="group-hover:text-red-400 transition-colors" />
+          <X size={20} className="group-hover:text-red-400 transition-colors" />
         </button>
         <button 
           onClick={(e) => { e.stopPropagation(); handleSwipe('right'); }}
-          className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-[0_20px_40px_rgba(255,255,255,0.1)] hover:bg-white hover:scale-110 active:scale-95 transition-all text-black pointer-events-auto group"
-          title="Save (ArrowRight)"
+          className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-[0_12px_30px_rgba(255,255,255,0.08)] hover:bg-white hover:scale-110 active:scale-95 transition-all text-black pointer-events-auto group"
+          title="Save"
         >
-          <Heart size={32} className="group-hover:fill-red-500 group-hover:text-red-500 transition-all" />
+          <Heart size={20} className="group-hover:fill-red-500 group-hover:text-red-500 transition-all" />
         </button>
       </div>
 

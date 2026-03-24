@@ -42,36 +42,36 @@ export function TripDetails({
   return (
     <div className="flex flex-col h-full bg-[#1A1A1A] text-white">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 pb-3">
-        <div className="flex items-center gap-3">
-          <div className="bg-[#3B82F6] p-2 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <Route size={18} className="text-white" />
+      <div className="flex items-center justify-between px-4 py-2.5">
+        <div className="flex items-center gap-2">
+          <div className="bg-[#3B82F6] p-1.5 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <Route size={15} className="text-white" />
           </div>
-          <h2 className="text-[16px] font-bold tracking-tight">Trips</h2>
+          <h2 className="text-[15px] font-bold tracking-tight">Trips</h2>
         </div>
-        <div className="flex gap-2">
-          <div className="flex bg-[#2A2A2A] rounded-full p-1 mr-2 border border-white/5">
+        <div className="flex gap-1.5">
+          <div className="flex bg-[#2A2A2A] rounded-full p-0.5 mr-1 border border-white/5">
             <button 
               onClick={() => setVisualMode('detailed')}
-              className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${visualMode === 'detailed' ? 'bg-[#3B82F6] text-white' : 'text-gray-400 hover:text-white'}`}
+              className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold transition-all ${visualMode === 'detailed' ? 'bg-[#3B82F6] text-white' : 'text-gray-400 hover:text-white'}`}
             >
               Detailed
             </button>
             <button 
               onClick={() => setVisualMode('compact')}
-              className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${visualMode === 'compact' ? 'bg-[#3B82F6] text-white' : 'text-gray-400 hover:text-white'}`}
+              className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold transition-all ${visualMode === 'compact' ? 'bg-[#3B82F6] text-white' : 'text-gray-400 hover:text-white'}`}
             >
               Compact
             </button>
           </div>
           <button 
             onClick={onToggleExpand} 
-            className="p-2 bg-[#2A2A2A] rounded-full hover:bg-white/10 transition-colors flex items-center justify-center border border-white/5"
+            className="p-1.5 bg-[#2A2A2A] rounded-full hover:bg-white/10 transition-colors flex items-center justify-center border border-white/5"
           >
-            {isExpanded ? <Minimize2 size={16} className="text-gray-300" /> : <Maximize2 size={16} className="text-gray-300" />}
+            {isExpanded ? <Minimize2 size={14} className="text-gray-300" /> : <Maximize2 size={14} className="text-gray-300" />}
           </button>
-          <button onClick={onClose} className="p-2 bg-[#2A2A2A] rounded-full hover:bg-white/10 transition-colors flex items-center justify-center border border-white/5">
-            <X size={16} className="text-gray-300" />
+          <button onClick={onClose} className="p-1.5 bg-[#2A2A2A] rounded-full hover:bg-white/10 transition-colors flex items-center justify-center border border-white/5">
+            <X size={14} className="text-gray-300" />
           </button>
         </div>
       </div>
@@ -266,28 +266,15 @@ export function TripDetails({
       </div>
 
       {/* STICKY BOTTOM BUTTONS */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#1A1A1A] via-[#1A1A1A] to-transparent pt-10">
-        <div className="bg-[#262626] rounded-2xl p-4 border border-white/5 shadow-2xl mb-4 max-w-sm mx-auto">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-gray-500 font-bold uppercase tracking-widest text-[9px]">Trip Stats</div>
-            <div className="text-[12px] font-bold text-white uppercase tracking-tight">{trip.pois.length} stops</div>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="text-gray-500 font-bold uppercase tracking-widest text-[9px]">Total Distance</div>
-            <div className="text-[16px] font-bold text-[#3B82F6] tracking-tight">
-              {trip.pois.length > 0 ? (120 + (trip.pois.length) * 12) : 0} km
-            </div>
-          </div>
-        </div>
-
+      <div className="absolute bottom-0 left-0 right-0 px-3 pb-3 bg-gradient-to-t from-[#1A1A1A] via-[#1A1A1A] to-transparent pt-8">
         <button 
           onClick={(e) => {
             e.stopPropagation();
             onPoiClick('swipe');
           }}
-          className="w-full max-w-sm mx-auto flex py-4 bg-[#2A2A2A] hover:bg-[#333] text-white font-bold rounded-2xl transition-all shadow-xl shadow-black/20 active:scale-[0.98] text-[15px] border border-white/10 items-center justify-center gap-2"
+          className="w-full max-w-sm mx-auto flex py-3 bg-[#2A2A2A] hover:bg-[#333] text-white font-bold rounded-xl transition-all shadow-xl shadow-black/20 active:scale-[0.98] text-[13px] border border-white/10 items-center justify-center gap-2"
         >
-          Add to Trip <ChevronRight size={18} className="text-[#3B82F6]" />
+          Add to Trip <ChevronRight size={15} className="text-[#3B82F6]" />
         </button>
       </div>
     </div>

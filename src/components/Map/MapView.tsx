@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Navigation, Compass, Layers } from 'lucide-react';
@@ -23,17 +23,31 @@ L.Marker.prototype.options.icon = DefaultIcon;
 interface MapViewProps {
   pois: POI[];
   onPoiClick: (id: string) => void;
+  selectedPoiId?: string | null;
+  isModalOpen?: boolean;
 }
 
-function MapController({ center, zoom }: { center: [number, number], zoom?: number }) {
+function MapController({ center, zoom, offsetY = 0 }: { center: [number, number], zoom?: number, offsetY?: number }) {
   const map = useMap();
   useEffect(() => {
-    if (zoom) {
-      map.flyTo(center, zoom, { duration: 1.5 });
-    } else {
-      map.setView(center, map.getZoom());
+    if (!center) return;
+    
+    // If we have an offset, calculate a new geographical center that puts our POI at the desired screen position
+    let finalCenter = L.latLng(center);
+    
+    if (offsetY !== 0) {
+      const zoomToUse = zoom || map.getZoom();
+      const point = map.project(center, zoomToUse);
+      const offsetPoint = point.add([0, offsetY]);
+      finalCenter = map.unproject(offsetPoint, zoomToUse);
     }
-  }, [center, map, zoom]);
+
+    if (zoom) {
+      map.flyTo(finalCenter, zoom, { duration: 1.5 });
+    } else {
+      map.setView(finalCenter, map.getZoom());
+    }
+  }, [center, map, zoom, offsetY]);
   return null;
 }
 
@@ -60,24 +74,24 @@ function MapControls({ onPoiClick }: { onPoiClick: (id: string) => void }) {
   };
 
   return (
-    <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-4 z-[1000]">
+    <div className="absolute right-3 top-20 flex flex-col gap-3 z-[1000]">
       <button 
-        className="bg-[#4B4D52] p-4 rounded-full shadow-lg hover:bg-[#5B5D62] transition-colors border border-[#333333] flex items-center justify-center"
+        className="bg-[#4B4D52] p-2.5 rounded-full shadow-lg hover:bg-[#5B5D62] transition-colors border border-[#333333] flex items-center justify-center"
         onClick={handleLocate}
       >
-        <Navigation size={32} className="text-white fill-white" />
+        <Navigation size={20} className="text-white fill-white" />
       </button>
       <button 
-        className="bg-[#FFC145] p-4 rounded-full shadow-lg hover:bg-[#FFD165] transition-colors border border-[#333333] flex items-center justify-center"
+        className="bg-[#FFC145] p-2.5 rounded-full shadow-lg hover:bg-[#FFD165] transition-colors border border-[#333333] flex items-center justify-center"
         onClick={() => onPoiClick('swipe')}
       >
-        <Compass size={32} className="text-white" />
+        <Compass size={20} className="text-white" />
       </button>
     </div>
   );
 }
 
-export function MapView({ pois, onPoiClick, selectedPoiId }: MapViewProps & { selectedPoiId?: string | null }) {
+export function MapView({ pois, onPoiClick, selectedPoiId, isModalOpen }: MapViewProps) {
   const defaultCenter: [number, number] = [48.8566, 2.3522]; // Center of Europe roughly (Paris)
   const [zoomLevel, setZoomLevel] = useState(5);
   const ZOOM_THRESHOLD = 4; // POIs appear when zoom is > 4
@@ -99,7 +113,25 @@ export function MapView({ pois, onPoiClick, selectedPoiId }: MapViewProps & { se
         <MapControls onPoiClick={onPoiClick} />
         
         {selectedPoiId && pois.find(p => p.id === selectedPoiId) && (
-          <MapController center={[pois.find(p => p.id === selectedPoiId)!.lat, pois.find(p => p.id === selectedPoiId)!.lng]} zoom={13} />
+          <MapController 
+            center={[pois.find(p => p.id === selectedPoiId)!.lat, pois.find(p => p.id === selectedPoiId)!.lng]} 
+            zoom={15} 
+            offsetY={isModalOpen ? window.innerHeight * 0.18 : 0} 
+          />
+        )}
+
+        {/* Dash line pointing down to the panel */}
+        {selectedPoiId && pois.find(p => p.id === selectedPoiId) && isModalOpen && (
+          <Polyline 
+            positions={[
+              [pois.find(p => p.id === selectedPoiId)!.lat, pois.find(p => p.id === selectedPoiId)!.lng],
+              [pois.find(p => p.id === selectedPoiId)!.lat - 0.005, pois.find(p => p.id === selectedPoiId)!.lng]
+            ]}
+            color="#3B82F6"
+            weight={3}
+            opacity={0.4}
+            dashArray="10, 10"
+          />
         )}
 
         {zoomLevel > ZOOM_THRESHOLD && pois.map((poi) => (

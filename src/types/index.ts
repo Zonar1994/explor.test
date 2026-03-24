@@ -6,6 +6,14 @@ export type Trip = {
   pois: string[]; // Array of POI IDs
 };
 
+export type Review = {
+  user: string;
+  avatar: string;
+  rating: number;
+  comment: string;
+  date: string;
+};
+
 export type POI = {
   id: string;
   name: string;
@@ -19,6 +27,14 @@ export type POI = {
   addedBy: string;
   duration: string;
   image: string;
+  moreImages: string[];
+  weather: {
+    temp: number;
+    condition: string;
+    forecast: string;
+  };
+  keyHighlights: string[];
+  userReviews: Review[];
   lat: number;
   lng: number;
 };
