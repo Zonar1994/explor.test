@@ -201,6 +201,13 @@ export function MapView({
           />
         )}
 
+        {!selectedPoiId && tripPois && tripPois.length === 1 && (
+          <MapController 
+            center={[tripPois[0].lat, tripPois[0].lng]} 
+            zoom={14} 
+          />
+        )}
+
         {/* Trip Route Visualization */}
         {tripPois && tripPois.length > 1 && (
           <>

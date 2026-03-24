@@ -11,6 +11,7 @@ import { SwipeView } from './components/Swipe/SwipeView';
 import { ProfileSettings, UserPreferences } from './components/ProfileSettings';
 import { initialTrips } from './data/mockData';
 import { Trip, POI, ModalState, TripEventType } from './types';
+import { fetchOsmPois } from './utils/osmService';
 
 export default function App() {
   const [activeModal, setActiveModal] = useState<ModalState>('trips');
@@ -175,7 +176,7 @@ export default function App() {
     toast.success('Place removed from trip');
   };
 
-  const handleWaypointSet = (lat: number, lng: number) => {
+  const handleWaypointSet = async (lat: number, lng: number) => {
     if (!selectedTripId) return;
     
     // Create a manual start location event from waypoint
@@ -197,8 +198,18 @@ export default function App() {
       };
     }));
     
+    // Trigger a POI fetch around this new waypoint
+    const radius = 0.05; // ~5km
+    const newPois = await fetchOsmPois(lat - radius, lng - radius, lat + radius, lng + radius);
+    setOsmPois(newPois);
+
     setModalHeight(62); // Back to normal
-    toast.success("Start point set!");
+    toast.success("Start point set! Discovering places nearby...");
+    
+    // Auto-open discovery if they haven't added anything else yet
+    setTimeout(() => {
+      setActiveModal('swipe');
+    }, 1500);
   };
 
   const handleAddCustomEvent = (tripId: string, type: TripEventType) => {
@@ -243,7 +254,11 @@ export default function App() {
       <div className="absolute inset-0 h-full w-full">
         <MapView 
           pois={osmPois} 
-          tripPois={selectedTrip ? selectedTrip.items.filter(i => i.type === 'poi').map(item => osmPois.find(p => p.id === item.poiId)).filter(Boolean) as POI[] : []}
+          tripPois={selectedTrip ? selectedTrip.items.map(item => {
+            if (item.type === 'poi' && item.poiId) return osmPois.find(p => p.id === item.poiId);
+            if ((item as any).lat && (item as any).lng) return { id: item.id, name: item.name, lat: (item as any).lat, lng: (item as any).lng } as POI;
+            return null;
+          }).filter(Boolean) as POI[] : []}
           onPoiClick={handlePoiClick} 
           selectedPoiId={selectedPoiId}
           isModalOpen={activeModal !== 'none' && !isExpanded}
