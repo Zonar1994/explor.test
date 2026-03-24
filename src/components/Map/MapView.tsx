@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Polyline } from 'react-leaflet';
+import { fetchOsmPois } from '../../utils/osmService';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Navigation, Compass, Layers } from 'lucide-react';
@@ -29,6 +30,8 @@ interface MapViewProps {
   isDiscoverOpen?: boolean;
   offsetYOverride?: number;
   mapType?: 'voyager' | 'light' | 'dark' | 'satellite' | 'hybrid';
+  onOsmPoisChange?: (pois: POI[]) => void;
+  onWaypointSet?: (lat: number, lng: number) => void;
 }
 
 function MapController({ center, zoom, offsetY = 0 }: { center: [number, number], zoom?: number, offsetY?: number }) {
@@ -55,11 +58,25 @@ function MapController({ center, zoom, offsetY = 0 }: { center: [number, number]
   return null;
 }
 
-function ZoomHandler({ onZoomChange }: { onZoomChange: (zoom: number) => void }) {
+function MapEventHandler({ 
+  onZoomChange, 
+  onMoveEnd, 
+  onContextMenu 
+}: { 
+  onZoomChange: (zoom: number) => void, 
+  onMoveEnd: (bounds: L.LatLngBounds) => void,
+  onContextMenu: (latlng: L.LatLng) => void
+}) {
   const map = useMapEvents({
     zoomend: () => {
       onZoomChange(map.getZoom());
     },
+    moveend: () => {
+      onMoveEnd(map.getBounds());
+    },
+    contextmenu: (e) => {
+      onContextMenu(e.latlng);
+    }
   });
   return null;
 }
@@ -95,10 +112,21 @@ function MapControls({ onPoiClick }: { onPoiClick: (id: string) => void }) {
   );
 }
 
-export function MapView({ pois, tripPois, onPoiClick, selectedPoiId, isModalOpen, isDiscoverOpen, offsetYOverride, mapType = 'voyager' }: MapViewProps) {
-  const defaultCenter: [number, number] = [48.8566, 2.3522]; // Center of Europe roughly (Paris)
-  const [zoomLevel, setZoomLevel] = useState(5);
-  const ZOOM_THRESHOLD = 4; // POIs appear when zoom is > 4
+export function MapView({ 
+  pois, 
+  tripPois, 
+  onPoiClick, 
+  selectedPoiId, 
+  isModalOpen, 
+  isDiscoverOpen, 
+  offsetYOverride, 
+  mapType = 'voyager',
+  onOsmPoisChange,
+  onWaypointSet
+}: MapViewProps) {
+  const tilburgCenter: [number, number] = [51.5583, 5.0833]; // Tilburg (Talent Square)
+  const [zoomLevel, setZoomLevel] = useState(13);
+  const ZOOM_THRESHOLD = 12; // POIs appear when we're closer
 
   // Offset calculation to push markers up to the visible top portion of the screen
   const getOffsetY = () => {
@@ -122,11 +150,27 @@ export function MapView({ pois, tripPois, onPoiClick, selectedPoiId, isModalOpen
     hybrid: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
   };
 
+  const handleMoveEnd = async (bounds: L.LatLngBounds) => {
+    if (!onOsmPoisChange) return;
+    
+    const south = bounds.getSouth();
+    const west = bounds.getWest();
+    const north = bounds.getNorth();
+    const east = bounds.getEast();
+    
+    // Only fetch if area isn't too large (basic check)
+    const latDiff = Math.abs(north - south);
+    if (latDiff > 0.5) return; 
+
+    const newPois = await fetchOsmPois(south, west, north, east);
+    onOsmPoisChange(newPois);
+  };
+
   return (
     <div className="absolute inset-0 z-0">
       <MapContainer 
-        center={defaultCenter} 
-        zoom={5} 
+        center={tilburgCenter} 
+        zoom={13} 
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
       >
@@ -142,7 +186,11 @@ export function MapView({ pois, tripPois, onPoiClick, selectedPoiId, isModalOpen
           />
         )}
         
-        <ZoomHandler onZoomChange={setZoomLevel} />
+        <MapEventHandler 
+          onZoomChange={setZoomLevel} 
+          onMoveEnd={handleMoveEnd}
+          onContextMenu={(ll) => onWaypointSet?.(ll.lat, ll.lng)}
+        />
         <MapControls onPoiClick={onPoiClick} />
         
         {selectedPoiId && pois.find(p => p.id === selectedPoiId) && (

@@ -12,7 +12,7 @@ interface PoiDetailsProps {
   allPois?: POI[];
   hideAddButton?: boolean;
   onClose: () => void;
-  onAddToTrip: (tripId: string, poiId: string) => void;
+  onAddToTrip: (tripId: string, poiId: string, group?: 'break' | 'accommodation' | 'entertainment') => void;
   onAddCustomEvent?: (type: TripEventType) => void;
   onViewOnMap: () => void;
 }
@@ -172,7 +172,10 @@ export function PoiDetails({ poi, trips, activeTripId, allPois, hideAddButton, o
                     <button
                       key={type}
                       onClick={() => {
-                        onAddCustomEvent?.(type as TripEventType);
+                        const targetTripId = activeTripId || (trips.length > 0 ? trips[0].id : null);
+                        if (targetTripId && activeItemPoi) {
+                          onAddToTrip(targetTripId, activeItemPoi.id, type as any);
+                        }
                         setHasAdded(false);
                       }}
                       className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all active:scale-95 border border-white/5"

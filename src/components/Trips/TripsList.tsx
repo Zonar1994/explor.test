@@ -47,7 +47,7 @@ export function TripsList({
           <div className="bg-[#3B82F6] p-2 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
             <Route size={18} className="text-white" />
           </div>
-          <h2 className="text-[18px] font-bold tracking-tight">Trips</h2>
+          <h2 className="text-[18px] font-black tracking-tight uppercase tracking-widest text-[#3B82F6]">Explor</h2>
         </div>
         <div className="flex gap-2">
           {!isExpanded && (

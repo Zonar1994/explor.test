@@ -20,13 +20,26 @@ export function NewTripForm({ onClose, onCreate }: NewTripFormProps) {
       return;
     }
     setError(null);
+
     const formData = new FormData(e.currentTarget);
+    const startStr = formData.get('start') as string || 'TBD';
+    const endStr = (formData.get('end') as string) || 'TBD';
+    
+    let days = 1;
+    if (startDate && endDate) {
+      const d1 = new Date(startDate);
+      const d2 = new Date(endDate);
+      const diffTime = Math.abs(d2.getTime() - d1.getTime());
+      days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    }
+
     const newTrip: Trip = {
       id: Date.now().toString(),
       name: formData.get('name') as string || 'New Trip',
-      start: formData.get('start') as string || 'TBD',
-      end: (formData.get('end') as string) || 'TBD',
-      items: []
+      start: startStr,
+      end: endStr,
+      items: [],
+      days
     };
     onCreate(newTrip);
   };

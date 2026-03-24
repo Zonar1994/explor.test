@@ -6,6 +6,8 @@ export type TripItem = {
   poiId?: string; // Only if type === 'poi'
   name?: string;  // Custom name for manual events
   duration?: string; // e.g., '2 hrs'
+  dayIndex?: number; // 0-indexed day the item belongs to
+  group?: 'break' | 'accommodation' | 'entertainment'; 
 };
 
 export type Trip = {
@@ -14,6 +16,7 @@ export type Trip = {
   start: string;
   end: string;
   items: TripItem[];
+  days?: number; // Total number of days
 };
 
 export type Review = {

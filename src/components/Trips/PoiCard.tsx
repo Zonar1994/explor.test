@@ -15,8 +15,23 @@ interface RichPoiCardProps {
   onShowWeather?: () => void;
 }
 
+const getWeatherIcon = (name: string, size: number = 24) => {
+  switch(name) {
+    case 'Sun': return <Sun size={size} className="text-yellow-400" />;
+    case 'CloudSun': return <Cloud size={size} className="text-gray-300" />;
+    case 'Clouds': return <Cloud size={size} className="text-gray-400" />;
+    case 'CloudRain': return <CloudRain size={size} className="text-blue-400" />;
+    case 'CloudDrizzle': return <CloudRain size={size} className="text-blue-300" />;
+    case 'CloudSnow': return <CloudSnow size={size} className="text-white" />;
+    case 'CloudLightning': return <CloudLightning size={size} className="text-yellow-500" />;
+    default: return <Sun size={size} className="text-yellow-400" />;
+  }
+};
+
 export function RichPoiCardContent({ poi, currentWeather, onShowWeather }: RichPoiCardProps) {
   const allImages = [poi.image, ...(poi.moreImages || [])];
+  const temp = (currentWeather?.temp) || poi.weather.temp;
+  const iconName = (currentWeather?.icon) || 'Sun';
 
   return (
     <>
@@ -55,14 +70,20 @@ export function RichPoiCardContent({ poi, currentWeather, onShowWeather }: RichP
           ))}
         </div>
 
-        {/* Weather Badge - Clickable */}
         <button 
           onClick={(e) => { e.stopPropagation(); onShowWeather?.(); }}
-          className="absolute top-3 right-3 bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-2 flex items-center gap-2 transition-all active:scale-95 cursor-pointer z-50 pointer-events-auto hover:bg-white/20"
+          className="absolute top-3 right-3 bg-[#1A1A1A]/60 backdrop-blur-xl border border-white/10 rounded-2xl px-3.5 py-2 flex items-center gap-3 transition-all active:scale-95 cursor-pointer z-50 pointer-events-auto hover:bg-[#1A1A1A]/80 shadow-2xl"
         >
-          <Thermometer size={14} className="text-blue-400" />
-          <span className="text-white font-bold text-[14px]">{(currentWeather?.temp) || poi.weather.temp}°</span>
-          <span className="text-white/60 text-[11px] font-bold uppercase tracking-widest">{(currentWeather?.condition) || poi.weather.condition}</span>
+          <div className="flex items-center justify-center p-1.5 bg-white/5 rounded-xl">
+            {getWeatherIcon(iconName, 18)}
+          </div>
+          <div className="flex flex-col items-start leading-none">
+            <span className="text-white font-black text-[16px] tracking-tighter">{temp}°</span>
+            <div className="flex gap-2 text-[8px] font-black uppercase tracking-widest opacity-60">
+              <span className="text-red-400">H:{temp + 3}°</span>
+              <span className="text-blue-400">L:{temp - 4}°</span>
+            </div>
+          </div>
         </button>
       </div>
 
@@ -173,19 +194,6 @@ export function WeatherForecastModal({ poi, isOpen, onClose }: { poi: POI | null
     }
   }, [poi, isOpen]);
 
-  const getIcon = (name: string, size: number = 24) => {
-    switch(name) {
-      case 'Sun': return <Sun size={size} className="text-yellow-400" />;
-      case 'CloudSun': return <Cloud size={size} className="text-gray-300" />;
-      case 'Clouds': return <Cloud size={size} className="text-gray-400" />;
-      case 'CloudRain': return <CloudRain size={size} className="text-blue-400" />;
-      case 'CloudDrizzle': return <CloudRain size={size} className="text-blue-300" />;
-      case 'CloudSnow': return <CloudSnow size={size} className="text-white" />;
-      case 'CloudLightning': return <CloudLightning size={size} className="text-yellow-500" />;
-      default: return <Sun size={size} className="text-yellow-400" />;
-    }
-  };
-
   if (!poi) return null;
 
   return (
@@ -212,11 +220,10 @@ export function WeatherForecastModal({ poi, isOpen, onClose }: { poi: POI | null
             <div className="w-[46px]" />
           </div>
 
-          {/* Compact Current Weather Row */}
           <div className="flex items-center justify-between bg-white/5 border border-white/10 p-5 rounded-3xl mb-8">
              <div className="flex items-center gap-4">
                 <div className="bg-white/10 p-3.5 rounded-2xl flex items-center justify-center">
-                  {getIcon(weather?.icon || 'Sun', 32)}
+                  {getWeatherIcon(weather?.icon || 'Sun', 32)}
                 </div>
                 <div>
                    <div className="text-[32px] font-black tracking-tighter leading-none mb-1">
@@ -239,13 +246,11 @@ export function WeatherForecastModal({ poi, isOpen, onClose }: { poi: POI | null
              </div>
           </div>
 
-          {/* Graphs / Hourly */}
           <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
              <h3 className="text-gray-500 uppercase tracking-widest text-[10px] font-black mb-6 flex items-center gap-2">
                <Clock size={12} className="text-blue-400" /> 24-Hour Forecast
              </h3>
              
-             {/* Hourly Graph (Line + Bars) */}
              <div className="relative h-32 w-full mb-8 pt-4">
                 <div className="absolute inset-0 flex items-end justify-between px-2">
                   {forecast.slice(0, 8).map((f, i) => (
@@ -261,10 +266,8 @@ export function WeatherForecastModal({ poi, isOpen, onClose }: { poi: POI | null
                     </div>
                   ))}
                 </div>
-                {/* Visual Line connecting tops could be an SVG here, but bars look clean. */}
              </div>
 
-             {/* Weekly Graph (High/Low) - Mocked for visual richness as requested */}
              <h3 className="text-gray-500 uppercase tracking-widest text-[10px] font-black mb-6 flex items-center gap-2">
                <Sun size={12} className="text-blue-400" /> 7-Day Outlook
              </h3>
@@ -272,11 +275,10 @@ export function WeatherForecastModal({ poi, isOpen, onClose }: { poi: POI | null
                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
                   <div key={day} className="flex items-center gap-4 text-[13px] font-bold">
                      <span className="w-8 text-gray-400">{day}</span>
-                     {getIcon(['Sun', 'Clouds', 'CloudRain', 'Sun', 'Sun', 'Clouds', 'CloudLightning'][i], 16)}
+                     {getWeatherIcon(['Sun', 'Clouds', 'CloudRain', 'Sun', 'Sun', 'Clouds', 'CloudLightning'][i], 16)}
                      <div className="flex-1 flex items-center gap-2">
                         <span className="text-gray-500 w-6 text-right">{12 + i}°</span>
                         <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden flex">
-                           {/* Position the visual bar based on min/max */}
                            <div className="h-full bg-gradient-to-r from-blue-400 to-yellow-400 rounded-full" style={{ marginLeft: `${20 + i*5}%`, width: '50%' }} />
                         </div>
                         <span className="text-white w-6">{20 + i}°</span>

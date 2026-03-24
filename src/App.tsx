@@ -9,7 +9,7 @@ import { PoiDetails } from './components/Trips/PoiDetails';
 import { NewTripForm } from './components/Trips/NewTripForm';
 import { SwipeView } from './components/Swipe/SwipeView';
 import { ProfileSettings, UserPreferences } from './components/ProfileSettings';
-import { initialTrips, mockPois } from './data/mockData';
+import { initialTrips } from './data/mockData';
 import { Trip, POI, ModalState, TripEventType } from './types';
 
 export default function App() {
@@ -56,6 +56,7 @@ export default function App() {
   const [isArchiveView, setIsArchiveView] = useState(false);
   const [swipeCategoryFilter, setSwipeCategoryFilter] = useState<string | null>(null);
   const [swipeTargetType, setSwipeTargetType] = useState<TripEventType | null>(null);
+  const [osmPois, setOsmPois] = useState<POI[]>([]);
 
   useEffect(() => {
     localStorage.setItem('explor_trips', JSON.stringify(trips));
@@ -67,6 +68,7 @@ export default function App() {
 
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isTripsExpanded, setIsTripsExpanded] = useState(true); // Added for the new UI element
 
@@ -86,8 +88,10 @@ export default function App() {
   
   const handleCreateTrip = (newTrip: Trip) => {
     setTrips([newTrip, ...trips]);
-    setActiveModal('trips');
-    toast.success('Trip created successfully!');
+    setSelectedTripId(newTrip.id);
+    setActiveModal('trip-details');
+    setModalHeight(40); // Small for start location step
+    toast.success('Trip created! Where are we starting?');
   };
 
   const handleDeleteTrip = (id: string) => {
@@ -119,6 +123,7 @@ export default function App() {
 
   const handleOpenTripDetails = (id: string) => {
     setSelectedTripId(id);
+    setSelectedDayIndex(0);
     setActiveModal('trip-details');
   };
 
@@ -134,18 +139,27 @@ export default function App() {
     }
   };
 
-  const handleAddPoiToTrip = (tripId: string, poiId: string) => {
-    const poi = mockPois.find(p => p.id === poiId);
+  const handleAddPoiToTrip = (tripId: string, poiId: string, group?: 'break' | 'accommodation' | 'entertainment') => {
+    const poi = osmPois.find(p => p.id === poiId);
     setTrips(trips.map(t => {
       if (t.id !== tripId) return t;
-      if (t.items.some(item => item.poiId === poiId)) return t;
+      // If already has it, update group? 
+      const exists = t.items.find(item => item.poiId === poiId);
+      if (exists) {
+        return {
+          ...t,
+          items: t.items.map(i => i.poiId === poiId ? { ...i, group: group || i.group } : i)
+        };
+      }
       return { 
         ...t, 
         items: [...t.items, { 
           id: Math.random().toString(36).substring(7), 
           type: 'poi', 
           poiId,
-          name: poi?.name || 'Place'
+          name: poi?.name || 'Place',
+          group,
+          dayIndex: selectedDayIndex
         }] 
       };
     }));
@@ -161,30 +175,30 @@ export default function App() {
     toast.success('Place removed from trip');
   };
 
-  const handleSwipeSave = (poiId: string) => {
-    const poi = mockPois.find(p => p.id === poiId);
-    const targetTrip = trips.find(t => t.id === selectedTripId) || trips[0];
-    if (targetTrip) {
-      setTrips(trips.map(t => {
-        if (t.id !== targetTrip.id) return t;
-        return { 
-          ...t, 
-          items: [...t.items, { 
-            id: Math.random().toString(36).substring(7), 
-            type: swipeTargetType || 'poi', 
-            poiId,
-            name: poi?.name || 'Unknown'
-          }] 
-        };
-      }));
-      toast.success(`Saved to ${targetTrip.name}`);
-      
-      if (swipeTargetType) {
-        setSwipeCategoryFilter(null);
-        setSwipeTargetType(null);
-        setActiveModal('trip-details');
-      }
-    }
+  const handleWaypointSet = (lat: number, lng: number) => {
+    if (!selectedTripId) return;
+    
+    // Create a manual start location event from waypoint
+    setTrips(prev => prev.map(t => {
+      if (t.id !== selectedTripId) return t;
+      return {
+        ...t,
+        items: [
+          ...t.items,
+          { 
+            id: `start-${Date.now()}`, 
+            type: 'poi', 
+            name: `Waypoint (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+            lat,
+            lng,
+            dayIndex: selectedDayIndex
+          } as any
+        ]
+      };
+    }));
+    
+    setModalHeight(62); // Back to normal
+    toast.success("Start point set!");
   };
 
   const handleAddCustomEvent = (tripId: string, type: TripEventType) => {
@@ -208,7 +222,8 @@ export default function App() {
           id: Math.random().toString(36).substring(7), 
           type, 
           name: `Scheduled ${type}`,
-          duration: '1 hr'
+          duration: '1 hr',
+          dayIndex: selectedDayIndex
         }] 
       };
     }));
@@ -220,21 +235,23 @@ export default function App() {
     localStorage.setItem('explor_prefs', JSON.stringify(prefs));
   };
 
-  const currentTrip = trips.find(t => t.id === selectedTripId);
-  const tripPois = currentTrip ? currentTrip.items.filter(i => i.type === 'poi').map(item => mockPois.find(p => p.id === item.poiId)).filter(Boolean) as POI[] : [];
+  const selectedTrip = trips.find(t => t.id === selectedTripId);
+  const selectedPoi = osmPois.find(p => p.id === selectedPoiId);
 
   return (
-    <div className="relative w-full h-screen bg-[#121212] overflow-hidden font-sans text-white flex">
+    <div className="relative w-full h-[100dvh] bg-[#121212] overflow-hidden font-sans text-white flex">
       <div className="absolute inset-0 h-full w-full">
         <MapView 
-          pois={mockPois} 
-          tripPois={tripPois}
+          pois={osmPois} 
+          tripPois={selectedTrip ? selectedTrip.items.filter(i => i.type === 'poi').map(item => osmPois.find(p => p.id === item.poiId)).filter(Boolean) as POI[] : []}
           onPoiClick={handlePoiClick} 
           selectedPoiId={selectedPoiId}
           isModalOpen={activeModal !== 'none' && !isExpanded}
           isDiscoverOpen={activeModal === 'swipe' && !isExpanded}
           offsetYOverride={modalHeight}
           mapType={mapType}
+          onOsmPoisChange={setOsmPois}
+          onWaypointSet={handleWaypointSet}
         />
       </div>
 
@@ -328,35 +345,37 @@ export default function App() {
               )}
 
               {activeModal === 'trip-details' && selectedTripId && (
-                <TripDetails 
-                  trip={trips.find(t => t.id === selectedTripId)!}
-                  allPois={mockPois}
-                  isExpanded={isExpanded}
-                  isMapSplit={false}
-                  onToggleExpand={handleToggleExpand}
-                  onToggleMapSplit={() => {}}
-                  onClose={handleCloseModal}
-                  onPoiClick={handlePoiClick}
-                  onRemovePoi={(poiId) => handleRemovePoiFromTrip(selectedTripId, poiId)}
-                  onAddCustomEvent={(type) => handleAddCustomEvent(selectedTripId, type)}
-                  mapType={mapType}
-                  setMapType={setMapType}
-                  onMapTypeToggle={toggleMapType}
-                />
+                  <TripDetails 
+                    trip={selectedTrip!} 
+                    allPois={osmPois}
+                    isExpanded={isExpanded}
+                    isMapSplit={false}
+                    selectedDayIndex={selectedDayIndex}
+                    onDayChange={setSelectedDayIndex}
+                    onToggleExpand={handleToggleExpand}
+                    onToggleMapSplit={() => {}} 
+                    onClose={handleCloseModal}
+                    onPoiClick={handlePoiClick}
+                    onRemovePoi={(poiId) => handleRemovePoiFromTrip(selectedTripId!, poiId)}
+                    onAddCustomEvent={(type) => handleAddCustomEvent(selectedTripId!, type)}
+                    mapType={mapType}
+                    onMapTypeToggle={toggleMapType}
+                    setMapType={setMapType}
+                  />
               )}
 
               {activeModal === 'poi-details' && selectedPoiId && (
-                <PoiDetails 
-                  poi={mockPois.find(p => p.id === selectedPoiId)!}
-                  trips={trips}
-                  activeTripId={selectedTripId}
-                  allPois={mockPois}
-                  hideAddButton={selectedTripId ? trips.find(t => t.id === selectedTripId)?.items.some(i => i.poiId === selectedPoiId) : false}
-                  onClose={() => setActiveModal(selectedTripId ? 'trip-details' : 'none')}
-                  onAddToTrip={handleAddPoiToTrip}
-                  onAddCustomEvent={(type) => handleAddCustomEvent(selectedTripId || trips[0]?.id, type)}
-                  onViewOnMap={() => setActiveModal('none')}
-                />
+                  <PoiDetails 
+                    poi={selectedPoi!} 
+                    trips={trips}
+                    activeTripId={selectedTripId}
+                    allPois={osmPois}
+                    hideAddButton={false} // Always show add to allow re-categorization
+                    onClose={() => setActiveModal(selectedTripId ? 'trip-details' : 'none')}
+                    onAddToTrip={handleAddPoiToTrip}
+                    onAddCustomEvent={(type) => handleAddCustomEvent(selectedTripId || trips[0]?.id, type)}
+                    onViewOnMap={() => setActiveModal('none')}
+                  />
               )}
 
               {activeModal === 'swipe' && (
@@ -393,8 +412,8 @@ export default function App() {
                     </div>
                     <div className="flex-1">
                       <SwipeView 
-                        pois={mockPois}
-                        onSave={handleSwipeSave}
+                        pois={osmPois}
+                        onSave={(id) => handleAddPoiToTrip(selectedTripId || trips[0]?.id, id, swipeTargetType as any)}
                         onSkip={() => {}}
                         onViewPoiChange={setSelectedPoiId}
                         activeFilter={swipeCategoryFilter || undefined}
