@@ -36,15 +36,35 @@ interface MapViewProps {
   onMapReady?: (map: L.Map) => void;
 }
 
-function MapController({ center, zoom, offsetY = 0, onMapReady }: { center: [number, number], zoom?: number, offsetY?: number, onMapReady?: (map: L.Map) => void }) {
+function MapReadyHandler({ onMapReady }: { onMapReady?: (map: L.Map) => void }) {
   const map = useMap();
+  const hasCalled = React.useRef(false);
   useEffect(() => {
-    if (onMapReady) onMapReady(map);
+    if (onMapReady && !hasCalled.current) {
+      onMapReady(map);
+      hasCalled.current = true;
+    }
+  }, [map, onMapReady]);
+  return null;
+}
+
+function MapController({ center, zoom, offsetY = 0 }: { center: [number, number], zoom?: number, offsetY?: number }) {
+  const map = useMap();
+  const lastPosRef = React.useRef<{lat: number, lng: number, zoom?: number, offsetY?: number} | null>(null);
+
+  useEffect(() => {
     if (!center) return;
     
-    // If we have an offset, calculate a new geographical center that puts our POI at the desired screen position
-    let finalCenter = L.latLng(center);
+    // Deep comparison using Ref to prevent infinite loop
+    if (lastPosRef.current && 
+        lastPosRef.current.lat === center[0] && 
+        lastPosRef.current.lng === center[1] && 
+        lastPosRef.current.zoom === zoom && 
+        lastPosRef.current.offsetY === offsetY) {
+        return;
+    }
     
+    let finalCenter = L.latLng(center);
     if (offsetY !== 0) {
       const zoomToUse = zoom || map.getZoom();
       const point = map.project(center, zoomToUse);
@@ -52,12 +72,14 @@ function MapController({ center, zoom, offsetY = 0, onMapReady }: { center: [num
       finalCenter = map.unproject(offsetPoint, zoomToUse);
     }
 
+    lastPosRef.current = { lat: center[0], lng: center[1], zoom, offsetY };
+
     if (zoom) {
       map.flyTo(finalCenter, zoom, { duration: 1.5 });
     } else {
       map.setView(finalCenter, map.getZoom());
     }
-  }, [center, map, zoom, offsetY]);
+  }, [center[0], center[1], map, zoom, offsetY]);
   return null;
 }
 
@@ -126,7 +148,7 @@ export function MapView({
   isModalOpen, 
   isDiscoverOpen, 
   offsetYOverride, 
-  mapType = 'voyager',
+  mapType = 'hybrid',
   onOsmPoisChange,
   onWaypointSet,
   onReFetch,
@@ -199,6 +221,7 @@ export function MapView({
           onMoveEnd={handleMoveEnd}
           onContextMenu={(ll) => onWaypointSet?.(ll.lat, ll.lng)}
         />
+        <MapReadyHandler onMapReady={onMapReady} />
         <MapControls onPoiClick={onPoiClick} onReFetch={onReFetch} />
         
         {selectedPoiId && pois.find(p => p.id === selectedPoiId) && (
@@ -206,7 +229,6 @@ export function MapView({
             center={[pois.find(p => p.id === selectedPoiId)!.lat, pois.find(p => p.id === selectedPoiId)!.lng]} 
             zoom={16} 
             offsetY={getOffsetY()} 
-            onMapReady={onMapReady}
           />
         )}
 
@@ -214,39 +236,41 @@ export function MapView({
           <MapController 
             center={[tripPois[0].lat, tripPois[0].lng]} 
             zoom={14} 
-            onMapReady={onMapReady}
           />
         )}
 
         {!selectedPoiId && (!tripPois || tripPois.length === 0) && (
           <MapController 
             center={tilburgCenter} 
-            onMapReady={onMapReady}
           />
         )}
 
-        {/* Trip Route Visualization */}
-        {tripPois && tripPois.length > 1 && (
+        {/* Trip Markers and Route */}
+        {tripPois && tripPois.length > 0 && (
           <>
-            <Polyline 
-              positions={tripPois.map(p => [p.lat, p.lng])}
-              color="#3B82F6"
-              weight={5}
-              opacity={0.8}
-              lineJoin="round"
-            />
-            {/* Outline for the route */}
-            <Polyline 
-              positions={tripPois.map(p => [p.lat, p.lng])}
-              color="#FFFFFF"
-              weight={8}
-              opacity={0.3}
-              lineJoin="round"
-            />
-            {/* Always show markers for trip POIs */}
-            {tripPois.map(poi => (
+            {tripPois.length > 1 && (
+              <>
+                <Polyline 
+                  positions={tripPois.map(p => [p.lat, p.lng])}
+                  color="#3B82F6"
+                  weight={5}
+                  opacity={0.8}
+                  lineJoin="round"
+                />
+                <Polyline 
+                  positions={tripPois.map(p => [p.lat, p.lng])}
+                  color="#FFFFFF"
+                  weight={8}
+                  opacity={0.3}
+                  lineJoin="round"
+                />
+              </>
+            )}
+            
+            {/* Render Markers for valid trip items */}
+            {tripPois.filter(p => p.lat !== 0 && p.lng !== 0).map((poi, idx) => (
               <Marker 
-                key={`trip-${poi.id}`} 
+                key={`trip-${poi.id}-${idx}`} 
                 position={[poi.lat, poi.lng]}
                 eventHandlers={{ click: () => onPoiClick(poi.id) }}
               />

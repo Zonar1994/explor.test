@@ -258,7 +258,7 @@ export function TripDetails({
   return (
     <div className="flex flex-col h-full bg-[#1A1A1A] text-white">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5">
+      <div className="flex items-center justify-between px-4 py-2.5 relative z-[5000]">
         <div className="flex items-center gap-2">
           <div className="bg-[#3B82F6] p-1.5 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/20">
             <Route size={15} className="text-white" />
@@ -292,7 +292,7 @@ export function TripDetails({
               
               {showMapMenu && (
                 <div className="absolute top-full mt-2 right-0 bg-[#2A2A2A] border border-white/10 rounded-xl shadow-2xl p-2 w-[140px] z-50 flex flex-col gap-1">
-                  {(['voyager', 'satellite', 'hybrid', 'light', 'dark'] as const).map(type => (
+                  {(['hybrid', 'satellite', 'voyager', 'light', 'dark'] as const).map(type => (
                     <button
                       key={type}
                       onClick={() => {

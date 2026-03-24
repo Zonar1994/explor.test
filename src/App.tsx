@@ -16,7 +16,7 @@ import { fetchOsmPois } from './utils/osmService';
 export default function App() {
   const [activeModal, setActiveModal] = useState<ModalState>('trips');
   const [modalHeight, setModalHeight] = useState<number>(62); // height in vh
-  const [mapType, setMapType] = useState<'voyager' | 'light' | 'dark' | 'satellite' | 'hybrid'>('voyager');
+  const [mapType, setMapType] = useState<'voyager' | 'light' | 'dark' | 'satellite' | 'hybrid'>('hybrid');
   
   const [userPrefs, setUserPrefs] = useState<UserPreferences>(() => {
     const saved = localStorage.getItem('explor_prefs');
@@ -25,7 +25,7 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(!userPrefs.hasSeenOnboarding);
 
   const toggleMapType = () => {
-    const types: ('voyager' | 'light' | 'dark' | 'satellite' | 'hybrid')[] = ['voyager', 'light', 'dark', 'satellite', 'hybrid'];
+    const types: ('voyager' | 'light' | 'dark' | 'satellite' | 'hybrid')[] = ['hybrid', 'satellite', 'voyager', 'light', 'dark'];
     const currentIndex = types.indexOf(mapType);
     setMapType(types[(currentIndex + 1) % types.length]);
   };
@@ -159,6 +159,8 @@ export default function App() {
           type: 'poi', 
           poiId,
           name: poi?.name || 'Place',
+          lat: poi?.lat,
+          lng: poi?.lng,
           group,
           dayIndex: selectedDayIndex
         }] 
@@ -274,8 +276,25 @@ export default function App() {
         <MapView 
           pois={osmPois} 
           tripPois={selectedTrip ? selectedTrip.items.map(item => {
-            if (item.type === 'poi' && item.poiId) return osmPois.find(p => p.id === item.poiId);
-            if ((item as any).lat && (item as any).lng) return { id: item.id, name: item.name, lat: (item as any).lat, lng: (item as any).lng } as POI;
+            if (item.type === 'poi' && item.poiId) {
+              const poi = osmPois.find(p => p.id === item.poiId);
+              if (poi) return { ...poi, id: item.id }; // Use trip item ID for uniqueness
+              // Fallback to basic data
+              return { 
+                id: item.id, 
+                name: item.name || 'Place', 
+                lat: (item as any).lat || 0, 
+                lng: (item as any).lng || 0 
+              } as POI;
+            }
+            if ((item as any).lat && (item as any).lng) {
+              return { 
+                id: item.id, 
+                name: item.name, 
+                lat: (item as any).lat, 
+                lng: (item as any).lng 
+              } as POI;
+            }
             return null;
           }).filter(Boolean) as POI[] : []}
           onPoiClick={handlePoiClick} 
@@ -423,7 +442,7 @@ export default function App() {
 
               {activeModal === 'swipe' && (
                 <div className="relative w-full h-full flex flex-col bg-[#121212]">
-                    <div className="flex justify-between items-center px-4 py-2.5 border-b border-white/5">
+                    <div className="flex justify-between items-center px-4 py-2.5 border-b border-white/5 relative z-[5000]">
                       <div>
                         <h2 className="text-[15px] font-bold text-white leading-tight">Discover Places</h2>
                         {selectedTripId && (
