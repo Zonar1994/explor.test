@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronRight, Navigation, Clock, Coffee, BedDouble, Ticket a
 import { Trip, POI, TripItem, TripEventType } from '../../types';
 import { fetchWeather, WeatherData } from '../../utils/weather';
 import { RichPoiCardContent, WeatherForecastModal } from './PoiCard';
+import { SwipeView } from '../Swipe/SwipeView';
 
 interface PoiDetailsProps {
   poi: POI;
@@ -89,52 +90,33 @@ export function PoiDetails({ poi, trips, activeTripId, allPois, hideAddButton, o
         <div className="w-10" />
       </div>
 
-      <div className="relative flex-1 w-full flex items-center justify-center p-2.5 overflow-hidden">
-        <AnimatePresence mode="popLayout">
-          <motion.div
-            key={currentItem.id}
-            style={{ x, opacity, scale }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.4}
-            onDragEnd={handleDragEnd}
-            initial={{ 
-              opacity: 0, 
-              x: direction === 'left' ? 300 : direction === 'right' ? -300 : 0,
-              scale: 0.9 
-            }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ 
-              opacity: 0, 
-              x: direction === 'left' ? -300 : direction === 'right' ? 300 : 0,
-              scale: 0.9,
-              transition: { duration: 0.15 }
-            }}
-            className="absolute inset-x-2.5 inset-y-2.5 bg-[#1A1A1A] rounded-[32px] overflow-hidden flex flex-col border border-white/5"
-          >
-            {currentItem.type === 'poi' && activeItemPoi ? (
-              <RichPoiCardContent 
-                poi={activeItemPoi} 
-                isTop={true} 
-                currentWeather={weatherMap[activeItemPoi.id]}
-                onShowWeather={() => setShowWeatherModal(true)}
-              />
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-blue-900/20 to-purple-900/10 h-full">
-                <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mb-6">
-                  <Navigation size={32} className="text-blue-400" />
-                </div>
-                <h2 className="text-[24px] font-bold text-white mb-2 tracking-tight uppercase">{currentItem.type}</h2>
-                <h3 className="text-gray-400 font-medium mb-8">{currentItem.name || `Scheduled ${currentItem.type}`}</h3>
-                {currentItem.duration && (
-                  <div className="bg-white/5 border border-white/10 rounded-full px-6 py-2.5 text-sm font-bold text-blue-400 flex items-center gap-2">
-                    <Clock size={16} /> {currentItem.duration}
-                  </div>
-                )}
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
+      <div className="relative flex-1 w-full overflow-hidden">
+        <SwipeView 
+          pois={timelineItems.map(item => {
+            if (item.type === 'poi' && item.poiId) return allPois?.find(p => p.id === item.poiId) || poi;
+            // Fallback for manual events or missing POIs
+            return {
+              id: item.id,
+              name: item.name || item.type.toUpperCase(),
+              description: item.duration ? `Scheduled for ${item.duration}` : 'Planned event',
+              category: (item.group ? (item.group.charAt(0).toUpperCase() + item.group.slice(1)) : 'City') as any,
+              lat: poi.lat,
+              lng: poi.lng,
+              image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800',
+              moreImages: [],
+              rating: 5,
+              reviews: 0,
+              hours: 'N/A',
+              tags: [item.type],
+              keyHighlights: [],
+              userReviews: [],
+              weather: poi.weather
+            } as POI;
+          })}
+          onSave={() => {}}
+          onSkip={() => {}}
+          hideActions={true}
+        />
       </div>
 
       {!hideAddButton && !activeTrip && activeItemPoi && (

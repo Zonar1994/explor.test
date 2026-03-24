@@ -16,6 +16,7 @@ interface TripDetailsProps {
   onPoiClick: (id: string) => void;
   onRemovePoi: (id: string) => void;
   onAddCustomEvent?: (type: TripEventType) => void;
+  onWaypointSet?: (lat: number, lng: number) => void;
   mapType?: string;
   onMapTypeToggle?: () => void;
   setMapType?: (type: 'voyager' | 'light' | 'dark' | 'satellite' | 'hybrid') => void;
@@ -32,6 +33,7 @@ export function TripDetails({
   onPoiClick,
   onRemovePoi,
   onAddCustomEvent,
+  onWaypointSet,
   mapType,
   onMapTypeToggle,
   setMapType,
@@ -364,13 +366,18 @@ export function TripDetails({
                   />
                   
                   {/* Mock Autocomplete Rows */}
-                  <div className="mt-4 space-y-2 opacity-60">
+                  <div className="mt-4 space-y-2">
                     {[
-                      { city: 'Tilburg', area: 'Talent Square, Noord-Brabant' },
-                      { city: 'Paris', area: 'Charles de Gaulle (CDG)' }
+                      { city: 'Tilburg', area: 'Talent Square, Noord-Brabant', lat: 51.5583, lng: 5.0833 },
+                      { city: 'Paris', area: 'Charles de Gaulle (CDG)', lat: 49.0097, lng: 2.5479 },
+                      { city: 'Amsterdam', area: 'Central Station', lat: 52.3791, lng: 4.8994 }
                     ].map((loc, i) => (
-                      <div key={i} className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl cursor-default">
-                        <Globe size={14} className="text-gray-500" />
+                      <div 
+                        key={i} 
+                        onClick={() => onWaypointSet?.(loc.lat, loc.lng)}
+                        className="flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl cursor-pointer transition-colors border border-transparent hover:border-white/5"
+                      >
+                        <Globe size={14} className="text-blue-400" />
                         <div>
                           <p className="text-[13px] font-bold text-white">{loc.city}</p>
                           <p className="text-[10px] text-gray-500 font-medium">{loc.area}</p>

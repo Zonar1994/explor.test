@@ -248,6 +248,25 @@ export default function App() {
 
   const selectedTrip = trips.find(t => t.id === selectedTripId);
   const selectedPoi = osmPois.find(p => p.id === selectedPoiId);
+  
+  const [mapRef, setMapRef] = useState<L.Map | null>(null);
+
+  const handleReFetch = async () => {
+    if (!mapRef) {
+      toast.error("Map not ready for re-fetch");
+      return;
+    }
+    const bounds = mapRef.getBounds();
+    const south = bounds.getSouth();
+    const west = bounds.getWest();
+    const north = bounds.getNorth();
+    const east = bounds.getEast();
+    
+    toast.loading("Finding new places...", { id: 'refetch' });
+    const newPois = await fetchOsmPois(south, west, north, east);
+    setOsmPois(newPois);
+    toast.success(`Found ${newPois.length} places!`, { id: 'refetch' });
+  };
 
   return (
     <div className="relative w-full h-[100dvh] bg-[#121212] overflow-hidden font-sans text-white flex">
@@ -267,6 +286,8 @@ export default function App() {
           mapType={mapType}
           onOsmPoisChange={setOsmPois}
           onWaypointSet={handleWaypointSet}
+          onReFetch={handleReFetch}
+          onMapReady={setMapRef}
         />
       </div>
 
@@ -313,9 +334,15 @@ export default function App() {
               }`}
               style={!isExpanded ? { height: `${modalHeight}dvh` } : {}}
             >
-              {/* Drag Handle */}
+              {/* Drag Handle Container (Invisible indicator, entirely functional) */}
               {!isExpanded && (
-                <div className="absolute top-0 left-0 right-0 h-6 flex items-center justify-center z-[4000] cursor-ns-resize">
+                <div 
+                  className="absolute top-0 left-0 right-0 h-14 flex items-center justify-center z-[4000] cursor-ns-resize"
+                  onPointerDown={(e) => {
+                    // Prevent text selection while dragging
+                    (e.target as HTMLElement).setAttribute('data-dragging', 'true');
+                  }}
+                >
                   <motion.div 
                     drag="y"
                     dragConstraints={{ top: 0, bottom: 0 }}
@@ -327,7 +354,7 @@ export default function App() {
                         return Math.min(Math.max(next, 25), 95);
                       });
                     }}
-                    className="w-12 h-1.5 bg-white/20 rounded-full hover:bg-white/40 transition-colors"
+                    className="w-full h-full opacity-0"
                   />
                 </div>
               )}
@@ -376,6 +403,7 @@ export default function App() {
                     mapType={mapType}
                     onMapTypeToggle={toggleMapType}
                     setMapType={setMapType}
+                    onWaypointSet={handleWaypointSet}
                   />
               )}
 

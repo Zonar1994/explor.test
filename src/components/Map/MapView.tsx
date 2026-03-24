@@ -32,11 +32,14 @@ interface MapViewProps {
   mapType?: 'voyager' | 'light' | 'dark' | 'satellite' | 'hybrid';
   onOsmPoisChange?: (pois: POI[]) => void;
   onWaypointSet?: (lat: number, lng: number) => void;
+  onReFetch?: () => void;
+  onMapReady?: (map: L.Map) => void;
 }
 
-function MapController({ center, zoom, offsetY = 0 }: { center: [number, number], zoom?: number, offsetY?: number }) {
+function MapController({ center, zoom, offsetY = 0, onMapReady }: { center: [number, number], zoom?: number, offsetY?: number, onMapReady?: (map: L.Map) => void }) {
   const map = useMap();
   useEffect(() => {
+    if (onMapReady) onMapReady(map);
     if (!center) return;
     
     // If we have an offset, calculate a new geographical center that puts our POI at the desired screen position
@@ -81,7 +84,7 @@ function MapEventHandler({
   return null;
 }
 
-function MapControls({ onPoiClick }: { onPoiClick: (id: string) => void }) {
+function MapControls({ onPoiClick, onReFetch }: { onPoiClick: (id: string) => void, onReFetch?: () => void }) {
   const map = useMap();
 
   const handleLocate = () => {
@@ -104,7 +107,10 @@ function MapControls({ onPoiClick }: { onPoiClick: (id: string) => void }) {
       </button>
       <button 
         className="bg-[#FFC145] p-2.5 rounded-full shadow-lg hover:bg-[#FFD165] transition-colors border border-[#333333] flex items-center justify-center"
-        onClick={() => onPoiClick('swipe')}
+        onClick={() => {
+          onReFetch?.();
+          onPoiClick('swipe');
+        }}
       >
         <Compass size={20} className="text-white" />
       </button>
@@ -122,7 +128,9 @@ export function MapView({
   offsetYOverride, 
   mapType = 'voyager',
   onOsmPoisChange,
-  onWaypointSet
+  onWaypointSet,
+  onReFetch,
+  onMapReady
 }: MapViewProps) {
   const tilburgCenter: [number, number] = [51.5583, 5.0833]; // Tilburg (Talent Square)
   const [zoomLevel, setZoomLevel] = useState(13);
@@ -160,7 +168,7 @@ export function MapView({
     
     // Only fetch if area isn't too large (basic check)
     const latDiff = Math.abs(north - south);
-    if (latDiff > 0.5) return; 
+    if (latDiff > 0.5 || isDiscoverOpen) return; 
 
     const newPois = await fetchOsmPois(south, west, north, east);
     onOsmPoisChange(newPois);
@@ -191,13 +199,14 @@ export function MapView({
           onMoveEnd={handleMoveEnd}
           onContextMenu={(ll) => onWaypointSet?.(ll.lat, ll.lng)}
         />
-        <MapControls onPoiClick={onPoiClick} />
+        <MapControls onPoiClick={onPoiClick} onReFetch={onReFetch} />
         
         {selectedPoiId && pois.find(p => p.id === selectedPoiId) && (
           <MapController 
             center={[pois.find(p => p.id === selectedPoiId)!.lat, pois.find(p => p.id === selectedPoiId)!.lng]} 
             zoom={16} 
             offsetY={getOffsetY()} 
+            onMapReady={onMapReady}
           />
         )}
 
@@ -205,6 +214,14 @@ export function MapView({
           <MapController 
             center={[tripPois[0].lat, tripPois[0].lng]} 
             zoom={14} 
+            onMapReady={onMapReady}
+          />
+        )}
+
+        {!selectedPoiId && (!tripPois || tripPois.length === 0) && (
+          <MapController 
+            center={tilburgCenter} 
+            onMapReady={onMapReady}
           />
         )}
 

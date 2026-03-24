@@ -12,9 +12,10 @@ interface SwipeViewProps {
   onViewPoiChange?: (poiId: string) => void;
   activeFilter?: string;
   onClearFilter?: () => void;
+  hideActions?: boolean;
 }
 
-export function SwipeView({ pois, onSave, onSkip, onViewPoiChange, activeFilter, onClearFilter }: SwipeViewProps) {
+export function SwipeView({ pois, onSave, onSkip, onViewPoiChange, activeFilter, onClearFilter, hideActions }: SwipeViewProps) {
   const filteredPois = activeFilter 
     ? pois.filter(p => p.category?.toLowerCase() === activeFilter.toLowerCase())
     : pois;
@@ -31,12 +32,6 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange, activeFilter,
       fetchWeather(activePoi.lat, activePoi.lng).then(setCurrentWeather);
     }
   }, [activePoi]);
-
-  useEffect(() => {
-    if (onViewPoiChange && filteredPois[currentIndex]) {
-      onViewPoiChange(filteredPois[currentIndex].id);
-    }
-  }, [currentIndex, filteredPois, onViewPoiChange]);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-15, 15]);
@@ -133,7 +128,7 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange, activeFilter,
               <motion.div
                 key={poi.id}
                 style={isTop ? { x, rotate, opacity, zIndex: 10 } : { zIndex: 5 }}
-                drag={isTop ? "x" : false}
+                drag={isTop && !hideActions ? "x" : false}
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.7}
                 dragTransition={{ bounceStiffness: 600, bounceDamping: 35 }}
@@ -297,33 +292,37 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange, activeFilter,
       </div>
 
       {/* Action Buttons with Gradient Shading */}
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#121212] via-[#121212]/90 to-transparent pointer-events-none z-30" />
-      <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-4 z-40 pointer-events-none">
-        <button 
-          onClick={(e) => { e.stopPropagation(); handleUndo(); }}
-          disabled={currentIndex === 0}
-          className={`w-10 h-10 bg-[#2A2A2A] rounded-full flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.5)] border border-white/10 transition-all text-yellow-500 pointer-events-auto group ${
-            currentIndex === 0 ? "opacity-40 cursor-not-allowed" : "hover:bg-[#333333] hover:scale-110 active:scale-95"
-          }`}
-          title="Undo last swipe"
-        >
-          <Undo2 size={18} className={currentIndex > 0 ? "group-hover:-rotate-45 transition-transform" : ""} />
-        </button>
-        <button 
-          onClick={(e) => { e.stopPropagation(); handleSwipe('left'); }}
-          className="w-12 h-12 bg-[#262626] rounded-full flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.5)] border border-white/10 hover:bg-[#333333] hover:scale-110 active:scale-95 transition-all text-gray-400 pointer-events-auto group"
-          title="Skip"
-        >
-          <X size={20} className="group-hover:text-red-400 transition-colors" />
-        </button>
-        <button 
-          onClick={(e) => { e.stopPropagation(); handleSwipe('right'); }}
-          className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-[0_12px_30px_rgba(255,255,255,0.08)] hover:bg-white hover:scale-110 active:scale-95 transition-all text-black pointer-events-auto group"
-          title="Save"
-        >
-          <Heart size={20} className="group-hover:fill-red-500 group-hover:text-red-500 transition-all" />
-        </button>
-      </div>
+      {!hideActions && (
+        <>
+          <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#121212] via-[#121212]/90 to-transparent pointer-events-none z-30" />
+          <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-4 z-40 pointer-events-none">
+            <button 
+              onClick={(e) => { e.stopPropagation(); handleUndo(); }}
+              disabled={currentIndex === 0}
+              className={`w-10 h-10 bg-[#2A2A2A] rounded-full flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.5)] border border-white/10 transition-all text-yellow-500 pointer-events-auto group ${
+                currentIndex === 0 ? "opacity-40 cursor-not-allowed" : "hover:bg-[#333333] hover:scale-110 active:scale-95"
+              }`}
+              title="Undo last swipe"
+            >
+              <Undo2 size={18} className={currentIndex > 0 ? "group-hover:-rotate-45 transition-transform" : ""} />
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); handleSwipe('left'); }}
+              className="w-12 h-12 bg-[#262626] rounded-full flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.5)] border border-white/10 hover:bg-[#333333] hover:scale-110 active:scale-95 transition-all text-gray-400 pointer-events-auto group"
+              title="Skip"
+            >
+              <X size={20} className="group-hover:text-red-400 transition-colors" />
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); handleSwipe('right'); }}
+              className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-[0_12px_30px_rgba(255,255,255,0.08)] hover:bg-white hover:scale-110 active:scale-95 transition-all text-black pointer-events-auto group"
+              title="Save"
+            >
+              <Heart size={20} className="group-hover:fill-red-500 group-hover:text-red-500 transition-all" />
+            </button>
+          </div>
+        </>
+      )}
 
       <WeatherForecastModal 
         poi={activePoi} 
