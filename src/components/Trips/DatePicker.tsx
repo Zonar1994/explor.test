@@ -8,10 +8,20 @@ interface DatePickerProps {
   placeholder?: string;
   name: string;
   align?: 'left' | 'right' | 'center';
+  isOpen?: boolean;
+  onToggle?: () => void;
 }
 
-export function DatePicker({ value, onChange, placeholder, name, align = 'center' }: DatePickerProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function DatePicker({ value, onChange, placeholder, name, align = 'center', isOpen: externalIsOpen, onToggle }: DatePickerProps) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+  const setIsOpen = (val: boolean) => {
+    if (onToggle) {
+      onToggle();
+    } else {
+      setInternalIsOpen(val);
+    }
+  };
   const [currentMonth, setCurrentMonth] = useState(() => {
     const d = value ? parseISO(value) : new Date();
     return isValid(d) ? d : new Date();
@@ -67,9 +77,15 @@ export function DatePicker({ value, onChange, placeholder, name, align = 'center
           <button
             type="button"
             key={day.toString()}
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               onChange(format(cloneDay, 'yyyy-MM-dd'));
-              setIsOpen(false);
+              if (onToggle) {
+                // Let the parent know we're done here
+                // We don't call anything here, parent's onChange will handle it
+              } else {
+                setInternalIsOpen(false);
+              }
             }}
             className={`w-full aspect-square max-w-[32px] mx-auto flex justify-center items-center text-[13px] font-bold rounded-full transition-all ${
               !isCurrentMonth ? "text-gray-700 opacity-50" :
@@ -98,16 +114,16 @@ export function DatePicker({ value, onChange, placeholder, name, align = 'center
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-[#2A2A2A] text-white rounded-2xl py-4 px-5 focus:outline-none focus:ring-2 focus:ring-white/10 border border-white/5 transition-all text-left flex items-center justify-between group h-[58px]"
+        className="w-full bg-[#2A2A2A] text-white rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-white/10 border border-white/5 transition-all text-left flex items-center justify-between group h-[48px]"
       >
-        <span className={value ? "text-gray-100 font-medium text-[15px]" : "text-gray-500 font-medium text-[15px]"}>
+        <span className={value ? "text-gray-100 font-medium text-[14px]" : "text-gray-500 font-medium text-[14px]"}>
           {value && isValid(parseISO(value)) ? format(parseISO(value), "MMM d, yyyy") : placeholder}
         </span>
-        <CalendarIcon size={18} className="text-gray-500 group-hover:text-blue-400 transition-colors" />
+        <CalendarIcon size={16} className="text-gray-500 group-hover:text-blue-400 transition-colors" />
       </button>
 
       {isOpen && (
-        <div className={`absolute z-[3000] mt-2 p-4 bg-[#1F1F1F] border border-white/10 rounded-[28px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.7)] w-[260px] animate-in fade-in zoom-in-95 duration-200 ${
+        <div className={`absolute z-[3000] mt-4 p-5 bg-[#1F1F1F] border border-white/10 rounded-[32px] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.9)] w-[320px] sm:w-[350px] animate-in fade-in zoom-in-95 duration-200 ${
           align === 'left' ? 'left-0 origin-top-left' :
           align === 'right' ? 'right-0 origin-top-right' :
           'left-1/2 -translate-x-1/2 origin-top'

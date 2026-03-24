@@ -7,11 +7,18 @@ interface SwipeViewProps {
   pois: POI[];
   onSave: (poiId: string) => void;
   onSkip: (poiId: string) => void;
+  onViewPoiChange?: (poiId: string) => void;
 }
 
-export function SwipeView({ pois, onSave, onSkip }: SwipeViewProps) {
+export function SwipeView({ pois, onSave, onSkip, onViewPoiChange }: SwipeViewProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
+
+  useEffect(() => {
+    if (onViewPoiChange && pois[currentIndex]) {
+      onViewPoiChange(pois[currentIndex].id);
+    }
+  }, [currentIndex, pois, onViewPoiChange]);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-15, 15]);
@@ -82,7 +89,7 @@ export function SwipeView({ pois, onSave, onSkip }: SwipeViewProps) {
 
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center p-4 pb-24 overflow-hidden bg-[#121212]">
-      <div className="relative w-full max-w-md aspect-[3/4] sm:h-[70vh]">
+      <div className="relative w-full max-w-xl h-[80%] flex-1">
         <AnimatePresence>
           {stack.map((poi, index) => {
             const isTop = index === 0;
@@ -117,8 +124,8 @@ export function SwipeView({ pois, onSave, onSkip }: SwipeViewProps) {
                 }}
                 className="absolute inset-0 w-full h-full bg-[#1A1A1A] rounded-[32px] shadow-2xl overflow-hidden flex flex-col border border-white/5 cursor-grab active:cursor-grabbing origin-bottom"
               >
-                {/* Image Section */}
-                <div className="relative h-2/3 w-full">
+                {/* Image Section - Reduced ratio to 1/2 to give more room for info */}
+                <div className="relative h-1/2 w-full shrink-0">
                   <img 
                     src={poi.image} 
                     alt={poi.name} 
@@ -134,35 +141,36 @@ export function SwipeView({ pois, onSave, onSkip }: SwipeViewProps) {
                       </span>
                     ))}
                   </div>
-
-                  {/* Distance Overlay */}
-                  <div className="absolute bottom-5 right-5">
-                    <div className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-2xl flex items-center gap-2 border border-white/10">
-                      <Navigation size={14} className="text-blue-400" />
-                      <span className="text-xs font-bold text-white">{poi.distance}</span>
-                    </div>
-                  </div>
                 </div>
 
-                {/* Content Section */}
-                <div className="p-7 flex-1 flex flex-col justify-end -mt-12 relative z-10">
-                  <h2 className="text-[26px] font-bold text-white leading-tight mb-2 tracking-tight">{poi.name}</h2>
+                {/* Content Section - Increased space and information density */}
+                <div className="p-8 pb-10 flex-1 flex flex-col justify-start -mt-8 relative z-10 overflow-hidden">
+                  <h2 className="text-[28px] font-bold text-white leading-tight mb-3 tracking-tight">{poi.name}</h2>
 
-                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-4 font-bold uppercase tracking-wider text-[12px]">
-                    <div className="flex items-center gap-1.5">
-                      <Star size={16} className="text-yellow-400 fill-yellow-400" />
-                      <span className="text-gray-200">{poi.rating}</span>
-                      <span>({poi.reviews})</span>
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-6 font-bold uppercase tracking-wider text-[11px]">
+                    <div className="flex items-center gap-2">
+                      <Star size={18} className="text-yellow-400 fill-yellow-400" />
+                      <span className="text-gray-100 text-[14px]">{poi.rating}</span>
+                      <span className="opacity-60">({poi.reviews} reviews)</span>
                     </div>
-                    <div className="flex items-center gap-1.5 border-l border-white/10 pl-4">
-                      <Clock size={16} />
-                      <span>{poi.hours}</span>
+                    <div className="flex items-center gap-2 border-l border-white/10 pl-4">
+                      <Clock size={18} className="text-blue-400" />
+                      <span className="text-gray-200">{poi.hours}</span>
                     </div>
                   </div>
 
-                  <p className="text-gray-400 text-[15px] line-clamp-2 leading-relaxed font-medium">
-                    {poi.description}
-                  </p>
+                  <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                    <p className="text-gray-400 text-[16px] leading-relaxed font-medium">
+                      {poi.description}
+                    </p>
+                    {/* Additional simulated info to populate the larger space */}
+                    <div className="pt-4 border-t border-white/5 flex flex-col gap-3">
+                      <div className="flex items-center gap-3 text-gray-500 text-[13px]">
+                        <MapPin size={16} />
+                        <span className="truncate">Near Museum District, Downtown</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             );
@@ -170,12 +178,13 @@ export function SwipeView({ pois, onSave, onSkip }: SwipeViewProps) {
         </AnimatePresence>
       </div>
 
-      {/* Action Buttons */}
-      <div className="absolute bottom-6 flex items-center justify-center gap-6 z-30 pointer-events-none w-full">
+      {/* Action Buttons with Gradient Shading */}
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#121212] via-[#121212]/90 to-transparent pointer-events-none z-30" />
+      <div className="absolute bottom-8 left-0 right-0 flex items-center justify-center gap-6 z-40 pointer-events-none">
         <button 
-          onClick={() => handleUndo()}
+          onClick={(e) => { e.stopPropagation(); handleUndo(); }}
           disabled={currentIndex === 0}
-          className={`w-12 h-12 bg-[#2A2A2A] rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.3)] border border-white/5 transition-all text-yellow-500 pointer-events-auto group ${
+          className={`w-12 h-12 bg-[#2A2A2A] rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/10 transition-all text-yellow-500 pointer-events-auto group ${
             currentIndex === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-[#333333] hover:scale-110 active:scale-95"
           }`}
           title="Undo last swipe (ArrowUp or Ctrl+Z)"
@@ -183,20 +192,21 @@ export function SwipeView({ pois, onSave, onSkip }: SwipeViewProps) {
           <Undo2 size={24} className={currentIndex > 0 ? "group-hover:-rotate-45 transition-transform" : ""} />
         </button>
         <button 
-          onClick={() => handleSwipe('left')}
-          className="w-16 h-16 bg-[#262626] rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.3)] border border-white/5 hover:bg-[#333333] hover:scale-110 active:scale-95 transition-all text-gray-400 pointer-events-auto group"
+          onClick={(e) => { e.stopPropagation(); handleSwipe('left'); }}
+          className="w-16 h-16 bg-[#262626] rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/10 hover:bg-[#333333] hover:scale-110 active:scale-95 transition-all text-gray-400 pointer-events-auto group"
           title="Skip (ArrowLeft)"
         >
           <X size={32} className="group-hover:text-red-400 transition-colors" />
         </button>
         <button 
-          onClick={() => handleSwipe('right')}
-          className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(255,255,255,0.1)] hover:bg-white hover:scale-110 active:scale-95 transition-all text-black pointer-events-auto group"
+          onClick={(e) => { e.stopPropagation(); handleSwipe('right'); }}
+          className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-[0_20px_40px_rgba(255,255,255,0.1)] hover:bg-white hover:scale-110 active:scale-95 transition-all text-black pointer-events-auto group"
           title="Save (ArrowRight)"
         >
           <Heart size={32} className="group-hover:fill-red-500 group-hover:text-red-500 transition-all" />
         </button>
       </div>
+
     </div>
   );
 }

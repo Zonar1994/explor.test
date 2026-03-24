@@ -1,5 +1,6 @@
 import React from 'react';
-import { Route, X, Star, Clock, MapPin, Globe, Phone, MessageSquare, Navigation } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Route, X, Star, Clock, MapPin, Globe, Phone, Navigation, ChevronRight } from 'lucide-react';
 import { Trip, POI } from '../../types';
 
 interface PoiDetailsProps {
@@ -14,119 +15,102 @@ export function PoiDetails({ poi, trips, onClose, onAddToTrip, onViewOnMap }: Po
   if (!poi) return null;
 
   return (
-    <div className="flex flex-col h-full bg-[#121212] text-white">
-      {/* Header Image */}
+    <div className="flex flex-col h-full bg-[#1A1A1A] text-white">
+      {/* Header Image Section */}
       <div className="relative h-64 w-full shrink-0">
         <img src={poi.image} alt={poi.name} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] via-transparent to-transparent" />
         
         <button 
           onClick={onClose} 
-          className="absolute top-4 right-4 p-2 bg-black/50 backdrop-blur-md rounded-full hover:bg-black/70 transition-colors z-10"
+          className="absolute top-4 right-4 p-2 bg-black/50 backdrop-blur-md rounded-full hover:bg-black/70 transition-colors z-10 border border-white/10"
         >
-          <X size={20} className="text-white" />
+          <X size={18} className="text-white" />
         </button>
 
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="flex flex-wrap gap-2 mb-2">
-            {poi.tags.map(tag => (
-              <span key={tag} className="bg-black/60 backdrop-blur-md text-white text-xs px-3 py-1 rounded-full font-medium border border-white/10">
-                {tag}
-              </span>
-            ))}
-          </div>
-          <h2 className="text-2xl font-bold text-white leading-tight">{poi.name}</h2>
+        {/* Tags overlapping the image bottom */}
+        <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
+          {poi.tags.slice(0, 3).map(tag => (
+            <span key={tag} className="bg-[#2A2A2A] text-white text-[10px] px-3 py-1.5 rounded-full font-bold border border-white/10 uppercase tracking-widest shadow-xl">
+              {tag}
+            </span>
+          ))}
+          <span className="bg-[#3B82F6] text-white text-[10px] px-3 py-1.5 rounded-full font-bold border border-white/10 flex items-center gap-1.5 shadow-xl">
+            <Navigation size={10} className="fill-white" /> {poi.distance}
+          </span>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-5">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Star size={18} className="text-yellow-400 fill-yellow-400" />
-            <span className="font-bold text-lg">{poi.rating}</span>
-            <span className="text-gray-400 text-sm">({poi.reviews} reviews)</span>
-          </div>
-          <div className="bg-[#2A2A2A] px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-[#333333]">
-            <Navigation size={14} className="text-blue-400" />
-            <span className="text-sm font-medium text-gray-200">{poi.distance}</span>
-          </div>
-        </div>
+      {/* Date Tabs (Reference Alignment) */}
+      <div className="px-5 py-4 border-b border-white/5 flex gap-6 overflow-x-auto scrollbar-hide shrink-0">
+        {['25-08-2025', '26-08-2025', '27-08-2025', '28-08-2025'].map((date, idx) => (
+          <button key={date} className={`text-[12px] font-bold uppercase tracking-widest pb-1 transition-colors ${idx === 0 ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-500 hover:text-gray-300'}`}>
+            {date}
+          </button>
+        ))}
+      </div>
 
-        <div className="space-y-4 mb-6">
-          <div className="flex items-start gap-3 text-gray-300">
-            <Clock size={20} className="text-gray-500 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-medium text-gray-200">Hours</p>
-              <p className="text-sm text-gray-400">{poi.hours}</p>
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto px-5 pt-6 custom-scrollbar">
+        {/* Timeline View (Reference) */}
+        <div className="relative pl-8 mb-8">
+          <div className="absolute left-[4px] top-6 bottom-0 w-[2px] bg-blue-500/20" />
+          
+          <div className="relative pb-10">
+            <div className="absolute -left-[32px] top-1.5 w-[16px] h-[16px] bg-[#3B82F6] rounded-full border-[3px] border-[#1A1A1A] z-10" />
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[14px] font-bold text-gray-200">{poi.name}</span>
+              <span className="text-[12px] font-bold text-gray-500 uppercase tracking-widest">09:00</span>
+            </div>
+            <p className="text-[12px] text-gray-400 leading-relaxed pr-4">{poi.description}</p>
+          </div>
+
+          <div className="relative pb-4">
+            <div className="absolute -left-[32px] top-1.5 w-[16px] h-[16px] bg-gray-600 rounded-full border-[3px] border-[#1A1A1A] z-10" />
+            <div className="flex items-center justify-between">
+              <span className="text-[14px] font-bold text-gray-500">Next Stop</span>
+              <span className="text-[12px] font-bold text-gray-500 uppercase tracking-widest">10:15</span>
             </div>
           </div>
-          <div className="flex items-start gap-3 text-gray-300">
-            <MapPin size={20} className="text-gray-500 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-medium text-gray-200">Location</p>
-              <p className="text-sm text-gray-400">{poi.lat.toFixed(4)}, {poi.lng.toFixed(4)}</p>
+        </div>
+
+        {/* POI Metadata Table */}
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="bg-[#222] p-4 rounded-2xl border border-white/5 flex flex-col gap-1">
+            <div className="flex items-center gap-2 text-gray-500 mb-1">
+              <Star size={14} className="text-yellow-400 fill-yellow-400" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Rating</span>
             </div>
+            <div className="text-[15px] font-bold">{poi.rating} <span className="text-gray-500 text-[12px] font-medium">({poi.reviews})</span></div>
+          </div>
+          <div className="bg-[#222] p-4 rounded-2xl border border-white/5 flex flex-col gap-1">
+            <div className="flex items-center gap-2 text-gray-500 mb-1">
+              <Clock size={14} className="text-blue-400" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Hours</span>
+            </div>
+            <div className="text-[13px] font-bold leading-tight">{poi.hours}</div>
           </div>
         </div>
 
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-2">About</h3>
-          <p className="text-gray-400 text-sm leading-relaxed">
-            {poi.description}
-          </p>
+        {/* Action Row */}
+        <div className="flex justify-between items-center mb-10 px-2 opacity-60">
+          <Globe size={20} className="hover:text-blue-400 transition-colors cursor-pointer" />
+          <MapPin size={20} className="hover:text-blue-400 transition-colors cursor-pointer" />
+          <Phone size={20} className="hover:text-blue-400 transition-colors cursor-pointer" />
+          <div className="h-4 w-px bg-white/10" />
+          <Navigation size={20} className="hover:text-blue-400 transition-colors cursor-pointer" />
         </div>
+      </div>
 
-        <div className="flex items-center justify-around py-4 border-y border-[#333333] mb-6">
-          <button 
-            onClick={onViewOnMap}
-            className="flex flex-col items-center gap-2 text-gray-400 hover:text-white transition-colors"
-          >
-            <div className="p-3 bg-blue-600/20 text-blue-400 rounded-full"><MapPin size={20} /></div>
-            <span className="text-xs font-medium">View Map</span>
-          </button>
-          <button className="flex flex-col items-center gap-2 text-gray-400 hover:text-white transition-colors">
-            <div className="p-3 bg-[#2A2A2A] rounded-full"><Globe size={20} /></div>
-            <span className="text-xs font-medium">Website</span>
-          </button>
-          <button className="flex flex-col items-center gap-2 text-gray-400 hover:text-white transition-colors">
-            <div className="p-3 bg-[#2A2A2A] rounded-full"><Phone size={20} /></div>
-            <span className="text-xs font-medium">Call</span>
-          </button>
-        </div>
-
-        <div className="mb-4">
-          <h3 className="text-sm font-semibold text-gray-400 mb-3">Add to Trip</h3>
-          <div className="space-y-2">
-            {trips.map(trip => {
-              const isInTrip = trip.pois.includes(poi.id);
-              return (
-                <button
-                  key={trip.id}
-                  onClick={() => !isInTrip && onAddToTrip(trip.id, poi.id)}
-                  disabled={isInTrip}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl transition-colors text-left border ${
-                    isInTrip 
-                      ? 'border-green-500/30 bg-green-500/10 cursor-default' 
-                      : 'border-[#333333] bg-[#2A2A2A] hover:bg-[#333333]'
-                  }`}
-                >
-                  <div>
-                    <div className="font-medium text-gray-100">{trip.name}</div>
-                    <div className="text-xs text-gray-400 mt-1">{trip.pois.length} stops</div>
-                  </div>
-                  <div className="text-sm font-medium">
-                    {isInTrip ? (
-                      <span className="text-green-400">Added</span>
-                    ) : (
-                      <span className="text-blue-400">+ Add</span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+      {/* Sticky Bottom Action Button */}
+      <div className="p-5 pt-2 mb-2">
+        <button 
+          onClick={() => onAddToTrip(trips[0]?.id, poi.id)}
+          className="w-full py-4 bg-[#2A2A2A] hover:bg-[#333] text-white font-bold rounded-2xl transition-all border border-white/10 shadow-2xl flex items-center justify-center gap-3 active:scale-[0.98]"
+        >
+          Add to Trip
+          <ChevronRight size={18} className="text-blue-400" />
+        </button>
       </div>
     </div>
   );

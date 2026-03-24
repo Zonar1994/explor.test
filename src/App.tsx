@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Route, X, Navigation } from 'lucide-react';
+import { Route, X, Maximize2, Minimize2 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { MapView } from './components/Map/MapView';
 import { TripsList } from './components/Trips/TripsList';
@@ -14,7 +14,6 @@ import { Trip, ModalState } from './types';
 export default function App() {
   const [activeModal, setActiveModal] = useState<ModalState>('trips');
   
-  // Load trips from localStorage or use initialTrips
   const [trips, setTrips] = useState<Trip[]>(() => {
     const saved = localStorage.getItem('travel_trips');
     if (saved) {
@@ -27,7 +26,6 @@ export default function App() {
     return initialTrips;
   });
 
-  // Save trips to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('travel_trips', JSON.stringify(trips));
   }, [trips]);
@@ -35,24 +33,15 @@ export default function App() {
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isMapSplit, setIsMapSplit] = useState(false);
 
-  // --- Handlers ---
   const handleOpenTrips = () => setActiveModal('trips');
   const handleCloseModal = () => {
     setActiveModal('none');
     setIsExpanded(false);
-    setIsMapSplit(false);
   };
   
   const handleToggleExpand = () => {
     setIsExpanded(!isExpanded);
-    if (!isExpanded) setIsMapSplit(false); // Can't be split and full screen at once
-  };
-
-  const handleToggleMapSplit = () => {
-    setIsMapSplit(!isMapSplit);
-    if (!isMapSplit) setIsExpanded(false); // Can't be split and full screen at once
   };
   
   const handleOpenNewTrip = () => setActiveModal('new-trip');
@@ -106,15 +95,12 @@ export default function App() {
 
   const handleSwipeSave = (poiId: string) => {
     const poi = mockPois.find(p => p.id === poiId);
-    const targetTrip = trips[0]; // Logic could be more sophisticated
+    const targetTrip = trips.find(t => t.id === selectedTripId) || trips[0];
     if (targetTrip) {
       setTrips(trips.map(t => 
         t.id === targetTrip.id ? { ...t, pois: [...new Set([...t.pois, poiId])] } : t
       ));
-      toast.success(`Saved ${poi?.name} to ${targetTrip.name}`, {
-        description: "You can find it in your trip details.",
-        duration: 3000,
-      });
+      toast.success(`Saved ${poi?.name} to ${targetTrip.name}`);
     } else {
       toast.error("Create a trip first to save places!");
     }
@@ -122,20 +108,14 @@ export default function App() {
 
   return (
     <div className="relative w-full h-screen bg-[#121212] overflow-hidden font-sans text-white flex">
-      {/* Main Map View - Width changes in split mode */}
-      <motion.div 
-        animate={{ width: isMapSplit ? '25%' : '100%' }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="h-full relative overflow-hidden"
-      >
+      <div className="absolute inset-0 h-full w-full">
         <MapView 
           pois={mockPois} 
           onPoiClick={handlePoiClick} 
           selectedPoiId={selectedPoiId}
         />
-      </motion.div>
+      </div>
 
-      {/* Main Trigger Button (Bottom Left) - Hidden if modal is open */}
       <AnimatePresence>
         {activeModal === 'none' && (
           <motion.button 
@@ -143,40 +123,32 @@ export default function App() {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             onClick={handleOpenTrips}
-            className="absolute bottom-10 left-10 bg-[#3B82F6] p-6 rounded-full shadow-[0_20px_50px_rgba(59,130,246,0.3)] hover:bg-blue-600 transition-all z-[1000] flex items-center justify-center border border-white/20 active:scale-95 group"
+            className="absolute bottom-6 left-6 bg-[#3B82F6] p-4 rounded-full shadow-[0_20px_50px_rgba(59,130,246,0.3)] hover:bg-blue-600 transition-all z-[1000] flex items-center justify-center border border-white/20 active:scale-95 group"
           >
-            <Route size={36} className="text-white group-hover:scale-110 transition-transform" />
+            <Route size={24} className="text-white group-hover:scale-110 transition-transform" />
           </motion.button>
         )}
       </AnimatePresence>
 
-      {/* Modals Overlay */}
       <AnimatePresence>
         {activeModal !== 'none' && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={`absolute inset-0 z-[2000] flex pointer-events-none ${
-              isExpanded ? 'items-center justify-center' : 
-              isMapSplit ? 'justify-end items-stretch' : 
-              'items-end justify-start p-6 sm:p-10 pb-10'
-            }`}
+            className={`absolute inset-0 z-[2000] flex items-end justify-center pointer-events-none p-4 sm:p-6 pb-8`}
           >
-            {/* Modal Container */}
             <motion.div 
               layout
-              initial={{ x: isMapSplit ? 400 : 0, y: isMapSplit ? 0 : 50, opacity: 0, scale: 0.95 }}
-              animate={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-              exit={{ x: isMapSplit ? 400 : 0, y: isMapSplit ? 0 : 50, opacity: 0, scale: 0.95 }}
+              initial={{ y: 50, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 50, opacity: 0, scale: 0.95 }}
               transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-              className={`bg-[#1A1A1A] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col pointer-events-auto border border-white/10 ${
-                isExpanded ? 'w-full h-full max-w-none rounded-none border-0' : 
-                isMapSplit ? 'w-3/4 h-full rounded-l-[40px] border-y-0 border-r-0' : 
-                'w-[95%] sm:w-[500px] md:w-[600px] h-[58vh] rounded-[40px] max-h-[800px]'
+              className={`bg-[#1A1A1A] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col pointer-events-auto border border-white/10 ${
+                isExpanded ? 'fixed inset-0 w-full h-full rounded-none' : 
+                'w-[95%] sm:w-[450px] md:w-[420px] h-[65vh] rounded-[32px] max-h-[750px] relative'
               }`}
             >
-              
               {activeModal === 'trips' && (
                 <TripsList 
                   trips={trips}
@@ -201,10 +173,10 @@ export default function App() {
                   trip={trips.find(t => t.id === selectedTripId)!}
                   allPois={mockPois}
                   isExpanded={isExpanded}
-                  isMapSplit={isMapSplit}
+                  isMapSplit={false}
                   onToggleExpand={handleToggleExpand}
-                  onToggleMapSplit={handleToggleMapSplit}
-                  onClose={() => setActiveModal('trips')}
+                  onToggleMapSplit={() => {}}
+                  onClose={handleCloseModal}
                   onPoiClick={handlePoiClick}
                   onRemovePoi={(poiId) => handleRemovePoiFromTrip(selectedTripId, poiId)}
                 />
@@ -222,48 +194,42 @@ export default function App() {
 
               {activeModal === 'swipe' && (
                 <div className="relative w-full h-full flex flex-col bg-[#121212]">
-                  {/* Map Toggle "comes from the top" */}
-                  <motion.button
-                    initial={{ y: -50, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    onClick={handleToggleMapSplit}
-                    className={`absolute top-0 left-1/2 -translate-x-1/2 z-[3000] px-6 py-2 rounded-b-2xl border-x border-b transition-all flex items-center gap-2 font-bold text-sm shadow-xl ${
-                      isMapSplit 
-                        ? 'bg-blue-600 border-blue-400 text-white' 
-                        : 'bg-[#2A2A2A] border-white/10 text-gray-400 hover:text-white hover:bg-[#333333]'
-                    }`}
-                  >
-                    <Navigation size={16} className={isMapSplit ? 'fill-white' : ''} />
-                    {isMapSplit ? 'Close Map' : 'Split Map'}
-                  </motion.button>
-
-                  <div className="flex justify-between items-center p-8 pb-6 border-b border-white/5 pt-10">
-                    <div>
-                      <h2 className="text-[26px] font-bold text-white leading-tight">Discover Places</h2>
-                      {selectedTripId && (
-                        <p className="text-[#3B82F6] text-sm font-bold tracking-widest uppercase mt-1">
-                          Refining: {trips.find(t => t.id === selectedTripId)?.name}
-                        </p>
-                      )}
+                    <div className="flex justify-between items-center p-6 pb-4 border-b border-white/5 pt-8">
+                      <div>
+                        <h2 className="text-[20px] font-bold text-white leading-tight">Discover Places</h2>
+                        {selectedTripId && (
+                          <p className="text-[#3B82F6] text-xs font-bold tracking-widest uppercase mt-1">
+                            Refining: {trips.find(t => t.id === selectedTripId)?.name}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={handleToggleExpand}
+                          className="p-2 bg-[#2A2A2A] rounded-full hover:bg-white/10 transition-colors flex items-center justify-center border border-white/5"
+                        >
+                          {isExpanded ? <Minimize2 size={16} className="text-gray-300" /> : <Maximize2 size={16} className="text-gray-300" />}
+                        </button>
+                        <button onClick={() => setActiveModal(selectedTripId ? 'trip-details' : 'trips')} className="p-2 bg-[#2A2A2A] rounded-full hover:bg-white/10 transition-colors flex items-center justify-center border border-white/5 shadow-xl group">
+                          <X size={16} className="text-gray-400 group-hover:text-white transition-colors" />
+                        </button>
+                      </div>
                     </div>
-                    <button onClick={() => setActiveModal(selectedTripId ? 'trip-details' : 'trips')} className="p-3 bg-[#2A2A2A] rounded-full hover:bg-white/10 transition-colors flex items-center justify-center border border-white/5 shadow-xl group">
-                      <X size={20} className="text-gray-400 group-hover:text-white transition-colors" />
-                    </button>
-                  </div>
-                  <div className="flex-1">
-                    <SwipeView 
-                      pois={mockPois}
-                      onSave={handleSwipeSave}
-                      onSkip={() => {}}
-                    />
-                  </div>
+                    <div className="flex-1">
+                      <SwipeView 
+                        pois={mockPois}
+                        onSave={handleSwipeSave}
+                        onSkip={() => {}}
+                        onViewPoiChange={setSelectedPoiId}
+                      />
+                    </div>
                 </div>
               )}
-
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+      <Toaster position="top-center" expand={false} richColors />
     </div>
   );
 }
