@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Route, X, Maximize2, Minimize2, Layers, SlidersHorizontal, CheckCircle2 } from 'lucide-react';
+import { Route, X, Maximize2, Minimize2, Layers, SlidersHorizontal, CheckCircle2, Heart } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { MapView } from './components/Map/MapView';
 import { TripsList } from './components/Trips/TripsList';
@@ -54,7 +54,11 @@ export default function App() {
     const saved = localStorage.getItem('explor_archived_trips');
     return saved ? JSON.parse(saved) : [];
   });
-  const [isArchiveView, setIsArchiveView] = useState(false);
+  const [viewMode, setViewMode] = useState<'active' | 'archived' | 'liked'>('active');
+  const [likedPoiIds, setLikedPoiIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem('explor_liked_pois');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [swipeCategoryFilter, setSwipeCategoryFilter] = useState<string | null>(null);
   const [swipeTargetType, setSwipeTargetType] = useState<TripEventType | null>(null);
   const [osmPois, setOsmPois] = useState<POI[]>([]);
@@ -66,6 +70,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('explor_archived_trips', JSON.stringify(archivedTrips));
   }, [archivedTrips]);
+
+  useEffect(() => {
+    localStorage.setItem('explor_liked_pois', JSON.stringify(likedPoiIds));
+  }, [likedPoiIds]);
 
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null);
@@ -97,7 +105,7 @@ export default function App() {
   };
 
   const handleDeleteTrip = (id: string) => {
-    if (isArchiveView) {
+    if (viewMode === 'archived') {
       setArchivedTrips(prev => prev.filter(t => t.id !== id));
       toast.success("Trip permanently deleted");
     } else {
@@ -173,9 +181,20 @@ export default function App() {
     setSelectedTripId(tripId);
   };
 
-  const handleBatchAddPois = (tripId: string, poiIds: string[]) => {
+  const handleBatchAddPois = (tripId: string | null | undefined, poiIds: string[]) => {
     if (poiIds.length === 0) {
-      setActiveModal('trip-details');
+      setActiveModal(tripId ? 'trip-details' : 'trips');
+      return;
+    }
+    
+    // If no trip ID, it's a global discover
+    if (!tripId) {
+      setLikedPoiIds(prev => Array.from(new Set([...prev, ...poiIds])));
+      setActiveModal('trips');
+      toast.success(`Saved ${poiIds.length} places to your Liked list!`, {
+        icon: <Heart className="text-pink-500 fill-pink-500" />,
+        duration: 3000
+      });
       return;
     }
     
@@ -422,9 +441,11 @@ export default function App() {
                   onDeleteTrip={handleDeleteTrip}
                   onRestoreTrip={handleRestoreTrip}
                   onOpenSettings={() => setIsSettingsOpen(true)}
-                  isArchiveView={isArchiveView}
-                  onToggleArchiveView={() => setIsArchiveView(!isArchiveView)}
+                  viewMode={viewMode}
+                  onSetViewMode={setViewMode}
                   archivedTrips={archivedTrips}
+                  likedPois={likedPoiIds.map(id => osmPois.find(p => p.id === id)).filter(Boolean) as POI[]}
+                  onRemoveLikedPoi={(id) => setLikedPoiIds(prev => prev.filter(pId => pId !== id))}
                   mapType={mapType}
                   setMapType={setMapType}
                   onMapTypeToggle={toggleMapType}
@@ -468,7 +489,10 @@ export default function App() {
                     activeTripId={selectedTripId}
                     allPois={osmPois}
                     hideAddButton={false} // Always show add to allow re-categorization
-                    onClose={() => setActiveModal(selectedTripId ? 'trip-details' : 'none')}
+                    onClose={() => {
+                      setSelectedPoiId(null);
+                      setActiveModal(selectedTripId ? 'trip-details' : 'trips');
+                    }}
                     onAddToTrip={handleAddPoiToTrip}
                     onAddCustomEvent={(type) => handleAddCustomEvent(selectedTripId || trips[0]?.id, type)}
                     onViewOnMap={() => setActiveModal('none')}
@@ -512,7 +536,7 @@ export default function App() {
                         pois={osmPois}
                         onSave={() => {}} // Not used in batch mode but kept for prop compatibility
                         onSkip={() => {}}
-                        onFinish={(ids) => handleBatchAddPois(selectedTripId || trips[0]?.id, ids)}
+                        onFinish={(ids) => handleBatchAddPois(selectedTripId, ids)}
                         onViewPoiChange={setSelectedPoiId}
                         activeFilter={swipeCategoryFilter || undefined}
                         onClearFilter={() => setSwipeCategoryFilter(null)}

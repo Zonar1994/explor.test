@@ -418,12 +418,12 @@ export function TripDetails({
 
         <div className="space-y-2">
           {trip.items.length === 0 ? (
-            <div className="flex flex-col gap-6 py-4">
-              <div className="bg-[#222] p-5 rounded-3xl border border-white/5 shadow-2xl">
-                <h4 className="text-[16px] font-black text-white mb-2 uppercase tracking-tight">Set Start Point</h4>
-                <p className="text-gray-400 text-[12px] mb-6 leading-relaxed">Choose where your journey begins. Search for a location or pick one manually on the map.</p>
+            <div className="flex flex-col gap-4 py-2">
+              <div className="bg-[#222] p-4 rounded-3xl border border-white/5 shadow-2xl">
+                <h4 className="text-[14px] font-black text-white mb-1.5 uppercase tracking-tight">Set Start Point</h4>
+                <p className="text-gray-400 text-[11px] mb-4 leading-relaxed">Choose where your journey begins. Search for a location or pick one manually on the map.</p>
                 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="relative">
                     <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">
                       <MapPin size={16} />
@@ -431,7 +431,7 @@ export function TripDetails({
                     <input 
                       type="text" 
                       placeholder="Enter start location..."
-                      className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-[13px] font-bold text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500/50 transition-all"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-[13px] font-bold text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500/50 transition-all"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           onWaypointSet?.(51.5583, 5.0833);
@@ -445,33 +445,33 @@ export function TripDetails({
                       // Mock current location for now
                       onWaypointSet?.(51.5583, 5.0833);
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-500 text-white rounded-xl text-[12px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-blue-500/20"
+                    className="w-full flex items-center justify-center gap-2 py-2 bg-blue-500 text-white rounded-xl text-[12px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-blue-500/20"
                   >
                     <Navigation size={14} className="fill-white" /> Use Current Location
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <button className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-all active:scale-95">
-                    <Navigation size={20} className="text-blue-400" />
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <button className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-all active:scale-95">
+                    <Navigation size={18} className="text-blue-400" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Current</span>
                   </button>
                   <button 
                     onClick={() => onPoiClick('swipe')}
-                    className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all active:scale-95"
+                    className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all active:scale-95"
                   >
-                    <Compass size={20} className="text-gray-400" />
+                    <Compass size={18} className="text-gray-400" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-gray-300">Discover</span>
                   </button>
                 </div>
               </div>
 
-              <div className="text-center px-6">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-full mb-2">
+              <div className="text-center px-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-full mb-2">
                    <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />
                    <span className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Map Waypoint Active</span>
                 </div>
-                <p className="text-gray-500 text-[11px] font-bold uppercase tracking-widest leading-relaxed">
+                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest leading-relaxed">
                   Tip: Right click (or long-press) anywhere on the map to set a precise start waypoint.
                 </p>
               </div>
@@ -587,68 +587,70 @@ export function TripDetails({
       </div>
 
       {/* STICKY BOTTOM BUTTONS */}
-      <div className="absolute bottom-0 left-0 right-0 px-4 pb-6 bg-gradient-to-t from-[#1A1A1A] via-[#1A1A1A] to-transparent pt-12 z-50">
-        <AnimatePresence mode="wait">
-          {!showBottomAddMenu ? (
-            <motion.button 
-              key="add-btn"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowBottomAddMenu(true);
-              }}
-              className="w-full flex py-4 bg-white text-black font-black rounded-2xl transition-all shadow-2xl shadow-black/40 active:scale-[0.98] text-[15px] items-center justify-center gap-2 border border-white/10"
-            >
-              Add to Trip <ChevronRight size={18} />
-            </motion.button>
-          ) : (
-            <motion.div 
-              key="menu"
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              className="bg-[#1A1A1A] rounded-3xl border border-white/10 p-5 shadow-2xl"
-            >
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                  {[
-                    { type: 'break', icon: Coffee, color: 'text-yellow-400', label: 'Break' },
-                    { type: 'entertainment', icon: TicketIcon, color: 'text-pink-400', label: 'Fun' },
-                    { type: 'accommodation', icon: BedDouble, color: 'text-indigo-400', label: 'Stay' }
-                  ].map(({ type, icon: Icon, color, label }) => (
-                  <button
-                    key={type}
-                    onClick={() => {
-                      onAddCustomEvent?.(type as TripEventType);
-                      setShowBottomAddMenu(false);
-                    }}
-                    className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all active:scale-95 border border-white/5"
+      {trip.items.length > 0 && (
+        <div className="absolute bottom-0 left-0 right-0 px-4 pb-6 bg-gradient-to-t from-[#1A1A1A] via-[#1A1A1A] to-transparent pt-12 z-50 pointer-events-none">
+          <AnimatePresence mode="wait">
+            {!showBottomAddMenu ? (
+              <motion.button 
+                key="add-btn"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowBottomAddMenu(true);
+                }}
+                className="w-full flex py-4 bg-white text-black font-black rounded-2xl transition-all shadow-2xl shadow-black/40 active:scale-[0.98] text-[15px] items-center justify-center gap-2 border border-white/10 pointer-events-auto"
+              >
+                Add to Trip <ChevronRight size={18} />
+              </motion.button>
+            ) : (
+              <motion.div 
+                key="menu"
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                className="bg-[#1A1A1A] rounded-3xl border border-white/10 p-5 shadow-2xl pointer-events-auto"
+              >
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                    {[
+                      { type: 'break', icon: Coffee, color: 'text-yellow-400', label: 'Break' },
+                      { type: 'entertainment', icon: TicketIcon, color: 'text-pink-400', label: 'Fun' },
+                      { type: 'accommodation', icon: BedDouble, color: 'text-indigo-400', label: 'Stay' }
+                    ].map(({ type, icon: Icon, color, label }) => (
+                    <button
+                      key={type}
+                      onClick={() => {
+                        onAddCustomEvent?.(type as TripEventType);
+                        setShowBottomAddMenu(false);
+                      }}
+                      className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all active:scale-95 border border-white/5"
+                    >
+                      <Icon size={24} className={color} />
+                      <span className="text-[11px] font-black uppercase tracking-widest text-gray-300">{label}</span>
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => onPoiClick('swipe')}
+                    className="flex-1 py-3 bg-blue-600/20 text-blue-400 font-bold rounded-xl text-[12px] uppercase tracking-widest border border-blue-500/20"
                   >
-                    <Icon size={24} className={color} />
-                    <span className="text-[11px] font-black uppercase tracking-widest text-gray-300">{label}</span>
+                    Discover POIs
                   </button>
-                ))}
-              </div>
-              
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => onPoiClick('swipe')}
-                  className="flex-1 py-3 bg-blue-600/20 text-blue-400 font-bold rounded-xl text-[12px] uppercase tracking-widest border border-blue-500/20"
-                >
-                  Discover POIs
-                </button>
-                <button 
-                  onClick={() => setShowBottomAddMenu(false)}
-                  className="p-3 bg-white/5 text-gray-500 rounded-xl hover:text-white transition-colors"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+                  <button 
+                    onClick={() => setShowBottomAddMenu(false)}
+                    className="p-3 bg-white/5 text-gray-500 rounded-xl hover:text-white transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 }

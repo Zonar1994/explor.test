@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { ChevronRight, Route, Maximize2, Minimize2, X, Trash2, Layers, SlidersHorizontal, Archive, Zap, RotateCcw } from 'lucide-react';
-import { Trip } from '../../types';
+import { ChevronRight, Route, Maximize2, Minimize2, X, Trash2, Layers, SlidersHorizontal, Archive, Zap, RotateCcw, Heart } from 'lucide-react';
+import { Trip, POI } from '../../types';
 
 interface TripsListProps {
   trips: Trip[];
@@ -12,9 +12,11 @@ interface TripsListProps {
   onDeleteTrip: (id: string) => void;
   onRestoreTrip?: (id: string) => void;
   onOpenSettings?: () => void;
-  isArchiveView: boolean;
-  onToggleArchiveView: () => void;
+  viewMode: 'active' | 'archived' | 'liked';
+  onSetViewMode: (mode: 'active' | 'archived' | 'liked') => void;
   archivedTrips: Trip[];
+  likedPois: POI[];
+  onRemoveLikedPoi: (id: string) => void;
   mapType?: string;
   onMapTypeToggle?: () => void;
   setMapType?: (type: 'voyager' | 'light' | 'dark' | 'satellite' | 'hybrid') => void;
@@ -30,9 +32,11 @@ export function TripsList({
   onDeleteTrip, 
   onRestoreTrip,
   onOpenSettings, 
-  isArchiveView,
-  onToggleArchiveView,
+  viewMode,
+  onSetViewMode,
   archivedTrips,
+  likedPois,
+  onRemoveLikedPoi,
   mapType, 
   onMapTypeToggle, 
   setMapType 
@@ -85,8 +89,10 @@ export function TripsList({
       <div className="flex-1 overflow-y-auto px-6 py-2 custom-scrollbar pb-24">
         <div className="flex items-center justify-between mb-4 mt-2">
           <h3 className="text-[12px] font-black text-gray-400 uppercase tracking-[0.15em] flex items-center gap-2">
-            {isArchiveView ? (
+            {viewMode === 'archived' ? (
               <><Archive size={12} className="text-yellow-500" /> Archived Trips</>
+            ) : viewMode === 'liked' ? (
+              <><Heart size={12} className="text-pink-500 fill-pink-500" /> Liked Places</>
             ) : (
               'Your Trips'
             )}
@@ -100,67 +106,118 @@ export function TripsList({
               <Zap size={15} className="fill-current" />
             </button>
             <button 
-              onClick={onToggleArchiveView}
-              className={`p-1 transition-colors ${isArchiveView ? 'text-[#3B82F6]' : 'text-gray-500 hover:text-white'}`}
-              title={isArchiveView ? "View Active" : "View Archive"}
+              onClick={() => onSetViewMode(viewMode === 'liked' ? 'active' : 'liked')}
+              className={`p-1 transition-colors ${viewMode === 'liked' ? 'text-pink-500' : 'text-gray-500 hover:text-white'}`}
+              title={viewMode === 'liked' ? "View Active" : "View Liked Places"}
+            >
+              <Heart size={15} className={viewMode === 'liked' ? "fill-pink-500" : ""} />
+            </button>
+            <button 
+              onClick={() => onSetViewMode(viewMode === 'archived' ? 'active' : 'archived')}
+              className={`p-1 transition-colors ${viewMode === 'archived' ? 'text-[#3B82F6]' : 'text-gray-500 hover:text-white'}`}
+              title={viewMode === 'archived' ? "View Active" : "View Archive"}
             >
               <Archive size={15} />
             </button>
           </div>
         </div>
         
-        {((isArchiveView ? archivedTrips : trips).length === 0) ? (
-          <div className="flex flex-col items-center justify-center h-40 text-center px-4">
-            <div className="bg-white/5 p-3 rounded-full mb-3">
-              <Route size={24} className="text-gray-400" />
+        {viewMode === 'liked' ? (
+          likedPois.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-40 text-center px-4">
+              <div className="bg-white/5 p-3 rounded-full mb-3">
+                <Heart size={24} className="text-gray-400" />
+              </div>
+              <p className="text-gray-400 mb-1 font-medium text-[13px]">
+                No liked places yet.
+              </p>
             </div>
-            <p className="text-gray-400 mb-1 font-medium text-[13px]">
-              {isArchiveView ? "No archived trips." : "No trips planned yet."}
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col">
-            {(isArchiveView ? archivedTrips : trips).map((trip) => (
-              <div 
-                key={trip.id} 
-                className="group py-4 flex items-center justify-between cursor-pointer border-b border-white/5 hover:bg-white/5 -mx-6 px-6 transition-colors"
-                onClick={() => !isArchiveView && onOpenTripDetails(trip.id)}
-              >
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-[15px] font-bold text-white mb-0.5 truncate">{trip.name}</h4>
-                  <p className="text-[12px] text-gray-500 font-medium">
-                    {trip.start} — {trip.end}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  {isArchiveView && (
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRestoreTrip?.(trip.id);
-                      }}
-                      className="p-2 text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all"
-                      title="Restore"
-                    >
-                      <RotateCcw size={14} />
-                    </button>
-                  )}
+          ) : (
+            <div className="flex flex-col">
+              {likedPois.map((poi) => (
+                <div 
+                  key={poi.id} 
+                  className="group py-4 flex items-center justify-between border-b border-white/5 hover:bg-white/5 -mx-6 px-6 transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0 pr-4">
+                     <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0">
+                       <img src={poi.image} alt={poi.name} className="w-full h-full object-cover" />
+                     </div>
+                     <div className="min-w-0">
+                       <h4 className="text-[14px] font-bold text-white mb-0.5 truncate">{poi.name}</h4>
+                       <p className="text-[11px] text-gray-500 font-medium truncate">
+                         {poi.category}
+                       </p>
+                     </div>
+                  </div>
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (window.confirm(isArchiveView ? 'Permanently delete this trip?' : 'Archive this trip?')) {
-                        onDeleteTrip(trip.id);
-                      }
+                      onRemoveLikedPoi(poi.id);
                     }}
-                    className={`p-2 transition-colors ${isArchiveView ? 'text-red-400 hover:bg-red-500/10' : 'text-gray-500 hover:text-red-400'} rounded-lg`}
+                    className="p-2 transition-colors text-gray-500 hover:text-red-400 rounded-lg group-hover:bg-red-500/10"
+                    title="Remove from Liked"
                   >
                     <Trash2 size={16} />
                   </button>
-                  {!isArchiveView && <ChevronRight size={18} className="text-gray-400 group-hover:translate-x-0.5 transition-transform" />}
                 </div>
+              ))}
+            </div>
+          )
+        ) : (
+          ((viewMode === 'archived' ? archivedTrips : trips).length === 0) ? (
+            <div className="flex flex-col items-center justify-center h-40 text-center px-4">
+              <div className="bg-white/5 p-3 rounded-full mb-3">
+                <Route size={24} className="text-gray-400" />
               </div>
-            ))}
-          </div>
+              <p className="text-gray-400 mb-1 font-medium text-[13px]">
+                {viewMode === 'archived' ? "No archived trips." : "No trips planned yet."}
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              {(viewMode === 'archived' ? archivedTrips : trips).map((trip) => (
+                <div 
+                  key={trip.id} 
+                  className="group py-4 flex items-center justify-between cursor-pointer border-b border-white/5 hover:bg-white/5 -mx-6 px-6 transition-colors"
+                  onClick={() => viewMode !== 'archived' && onOpenTripDetails(trip.id)}
+                >
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-[15px] font-bold text-white mb-0.5 truncate">{trip.name}</h4>
+                    <p className="text-[12px] text-gray-500 font-medium">
+                      {trip.start} — {trip.end}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {viewMode === 'archived' && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRestoreTrip?.(trip.id);
+                        }}
+                        className="p-2 text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all"
+                        title="Restore"
+                      >
+                        <RotateCcw size={14} />
+                      </button>
+                    )}
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(viewMode === 'archived' ? 'Permanently delete this trip?' : 'Archive this trip?')) {
+                          onDeleteTrip(trip.id);
+                        }
+                      }}
+                      className={`p-2 transition-colors ${viewMode === 'archived' ? 'text-red-400 hover:bg-red-500/10' : 'text-gray-500 hover:text-red-400'} rounded-lg`}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                    {viewMode !== 'archived' && <ChevronRight size={18} className="text-gray-400 group-hover:translate-x-0.5 transition-transform" />}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         )}
       </div>
 
