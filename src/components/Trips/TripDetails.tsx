@@ -42,6 +42,15 @@ export function TripDetails({
   const [showAddMenuIndex, setShowAddMenuIndex] = React.useState<number | null>(null);
   const [showBottomAddMenu, setShowBottomAddMenu] = React.useState(false);
   const [showMapMenu, setShowMapMenu] = React.useState(false);
+  const timelineRefs = React.useRef<(HTMLDivElement | null)[]>([]);
+
+  const handleDayTabClick = (idx: number) => {
+    onDayChange(idx);
+    const element = document.getElementById(`day-section-${idx}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
   
   const generateDateTabs = () => {
     if (!trip.start || trip.start === 'TBD') return ['Day 1'];
@@ -66,7 +75,183 @@ export function TripDetails({
     };
   };
 
-  const filteredItems = trip.items.filter(item => (item.dayIndex || 0) === selectedDayIndex);
+  const renderAddMenu = (id: string | number) => {
+    if (showAddMenuIndex !== id) return (
+      <button 
+        onClick={() => setShowAddMenuIndex(id as any)}
+        className="group flex items-center gap-3 text-gray-500 hover:text-white transition-colors relative z-10"
+      >
+        <div className="w-5 h-5 rounded-full bg-[#2A2A2A] border border-white/10 flex items-center justify-center group-hover:bg-[#3B82F6] group-hover:border-[#3B82F6] transition-all">
+          <Plus size={12} />
+        </div>
+        <div className="h-px bg-white/5 flex-1 w-24 group-hover:bg-white/10 transition-colors" />
+      </button>
+    );
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-[#1A1A1A] rounded-2xl border border-white/10 p-4 shadow-2xl relative z-20"
+      >
+        <div className="grid grid-cols-3 gap-3 mb-3">
+          {[
+            { type: 'break', icon: Coffee, color: 'text-yellow-400', label: 'Break' },
+            { type: 'accommodation', icon: BedDouble, color: 'text-indigo-400', label: 'Stay' },
+            { type: 'entertainment', icon: TicketIcon, color: 'text-pink-400', label: 'Fun' }
+          ].map(({ type, icon: Icon, color, label }) => (
+            <button
+              key={type}
+              onClick={() => {
+                onAddCustomEvent?.(type as TripEventType);
+                setShowAddMenuIndex(null);
+              }}
+              className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all active:scale-95 border border-white/5"
+            >
+              <Icon size={20} className={color} />
+              <span className="text-[10px] font-black uppercase tracking-widest text-gray-300">{label}</span>
+            </button>
+          ))}
+        </div>
+        <button onClick={() => setShowAddMenuIndex(null)} className="w-full py-2 text-gray-500 hover:text-white text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
+          <X size={12} /> Cancel
+        </button>
+      </motion.div>
+    );
+  };
+
+  const renderDaySection = (dayIdx: number, items: any[]) => {
+    return (
+      <div key={`day-section-${dayIdx}`} id={`day-section-${dayIdx}`} className="pt-4 scroll-mt-20">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="bg-[#3B82F6] p-2 rounded-xl">
+            <Compass size={18} className="text-white" />
+          </div>
+          <div>
+            <h4 className="text-white font-black text-[14px] uppercase tracking-widest">{dayTabs[dayIdx]}</h4>
+            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] mt-0.5">Start of Day</p>
+          </div>
+          <div className="h-px bg-white/5 flex-1 ml-2" />
+        </div>
+
+        {items.map((item, index) => {
+          const isLast = index === items.length - 1;
+          const travelInfo = getTravelInfo(index);
+          const itemKey = `${item.id}-${index}`;
+
+          // RENDER LOGIC FOR DIFFERENT TYPES
+          if (item.type !== 'poi') {
+            const eventStyles = {
+              break: { color: 'text-yellow-400', border: 'border-yellow-500/30 bg-yellow-500/5', label: 'Break' },
+              accommodation: { color: 'text-indigo-400', border: 'border-indigo-500/30 bg-indigo-500/5', label: 'Stay' },
+              entertainment: { color: 'text-pink-400', border: 'border-pink-500/30 bg-pink-500/5', label: 'Fun' }
+            }[item.type as string] || { color: 'text-blue-400', border: 'border-white/5', label: item.type };
+
+            return (
+              <div key={itemKey} className="relative pl-7 group">
+                <div className="absolute left-[7px] top-6 bottom-0 w-[2px] bg-white/10" />
+                <div className={`absolute left-0 top-1 w-[16px] h-[16px] rounded-full border-[3px] border-[#1A1A1A] z-10 shadow-lg ${eventStyles.color.replace('text', 'bg')}`} />
+                
+                <div className="flex items-center justify-between mb-3 mt-0.5">
+                  <span className={`font-black ${eventStyles.color} text-[10px] uppercase tracking-[0.2em]`}>{eventStyles.label}</span>
+                  <div className="h-px bg-white/10 flex-1 mx-3" />
+                </div>
+                <div className={`bg-[#222] rounded-2xl p-4 border ${eventStyles.border} shadow-xl relative overflow-hidden group mb-6`}>
+                   <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ${eventStyles.border.replace('border', 'bg').replace('/30', '/5')}`} />
+                   <div className="relative z-10">
+                      <h4 className="text-white font-black tracking-tight text-[15px]">{item.name || `Scheduled ${eventStyles.label}`}</h4>
+                      <div className="flex items-center gap-3 text-[11px] text-gray-400 mt-2 font-bold uppercase tracking-wider">
+                        <span className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-lg"><Clock size={12} className={eventStyles.color} /> {item.duration || '1 hr'}</span>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="pb-8">{renderAddMenu(item.id)}</div>
+              </div>
+            );
+          }
+
+          const poi = allPois.find(p => p.id === item.poiId);
+          if (!poi) return null;
+
+          const groupStyles = {
+            break: 'border-yellow-500/30 bg-yellow-500/5',
+            accommodation: 'border-indigo-500/30 bg-indigo-500/5',
+            entertainment: 'border-pink-500/30 bg-pink-500/5'
+          }[item.group || ''] || 'border-white/5';
+
+          const groupLabel = {
+            break: 'Break',
+            accommodation: 'Stay',
+            entertainment: 'Fun'
+          }[item.group || ''] || poi.category;
+
+          const groupColor = {
+            break: 'text-yellow-400',
+            accommodation: 'text-indigo-400',
+            entertainment: 'text-pink-400',
+          }[item.group || ''] || 'text-[#FF6B6B]';
+
+          return (
+            <div key={itemKey} className="relative pl-7 group">
+              <div className="absolute left-[7px] top-6 bottom-0 w-[2px] bg-white/10" />
+              <div className="absolute left-0 top-1 w-[16px] h-[16px] bg-[#FF6B6B] rounded-full border-[3px] border-[#1A1A1A] z-10 shadow-lg" />
+              
+              <div className="flex items-center justify-between mb-3 mt-0.5">
+                <span className={`font-black text-[10px] uppercase tracking-[0.2em] ${groupColor}`}>{groupLabel}</span>
+                <div className="h-px bg-white/10 flex-1 mx-3" />
+              </div>
+
+              <motion.div layout className="relative overflow-hidden pb-6">
+                {visualMode === 'detailed' ? (
+                  <div className="flex gap-3 mb-3">
+                    <div className={`w-1 rounded-full ${groupColor.replace('text', 'bg')}`} />
+                    <div className={`flex-1 bg-[#222] rounded-2xl overflow-hidden border ${groupStyles} relative shadow-xl`}>
+                      <div className="relative h-48">
+                        <img src={poi.image} alt={poi.name} className="w-full h-full object-cover select-none" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#222] via-transparent to-transparent opacity-80" />
+                        <div className="absolute top-3 left-3 flex flex-wrap gap-2 z-10">
+                          {poi.tags.slice(0, 3).map(tag => (
+                            <span key={tag} className="bg-black/80 backdrop-blur-md text-white text-[12px] px-3 py-1 rounded-lg font-bold border border-white/10 tracking-tight">
+                              {tag}
+                            </span>
+                          ))}
+                          <span className="bg-blue-600/90 backdrop-blur-md text-white text-[10px] px-2.5 py-1 rounded-full font-bold flex items-center gap-1 border border-white/10">
+                            <Navigation size={10} className="fill-white" /> {travelInfo.distance}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-4 cursor-pointer" onClick={() => onPoiClick(poi.id)}>
+                        <h4 className="text-[16px] font-bold text-white tracking-tight leading-snug hover:text-blue-400 transition-colors mb-4">{poi.name}</h4>
+                        <div className="flex items-center justify-between">
+                          <div className="flex gap-3">
+                            <Globe size={16} className="text-gray-500 hover:text-white transition-colors cursor-pointer" />
+                            <MapPin size={16} className="text-gray-500 hover:text-white transition-colors cursor-pointer" />
+                          </div>
+                          <button className="p-2 hover:bg-white/5 rounded-full transition-all text-gray-500 hover:text-red-400" onClick={(e) => { e.stopPropagation(); onRemovePoi(poi.id); }}>
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <motion.div className={`flex gap-3 mb-2 bg-[#222] p-4 rounded-xl border ${groupStyles} active:bg-[#2A2A2A] transition-colors relative`}>
+                    <div className="flex flex-1 items-center justify-between cursor-pointer" onClick={() => onPoiClick(poi.id)}>
+                      <h4 className="text-[14px] font-bold text-white hover:text-blue-400 transition-colors">{poi.name}</h4>
+                      <X size={16} className="text-gray-600 hover:text-red-400 transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); onRemovePoi(poi.id); }} />
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
+
+              <div className="pb-8">{renderAddMenu(item.id)}</div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col h-full bg-[#1A1A1A] text-white">
@@ -137,12 +322,12 @@ export function TripDetails({
         <h3 className="text-[15px] font-bold text-white mb-3 leading-tight">{trip.name}!!</h3>
         
         {/* Date Tabs */}
-        <div className="flex items-center justify-between mb-5 border-b border-white/5">
+        <div className="sticky top-0 z-40 bg-[#1A1A1A]/90 backdrop-blur-md pb-2 mb-5 border-b border-white/5 pt-2">
           <div className="flex gap-5 overflow-x-auto pb-1 scrollbar-hide">
             {dayTabs.map((date, idx) => (
               <button 
                 key={`${date}-${idx}`}
-                onClick={() => onDayChange(idx)}
+                onClick={() => handleDayTabClick(idx)}
                 className={`font-semibold pb-2 transition-all text-[13px] relative whitespace-nowrap tracking-wide ${
                   selectedDayIndex === idx 
                     ? 'text-[#3B82F6]' 
@@ -297,171 +482,34 @@ export function TripDetails({
                 </div>
               </div>
 
-              {filteredItems.map((item, index, arr) => {
-                const isLast = index === arr.length - 1;
-                const travelInfo = getTravelInfo(index);
+              {/* Timeline Items */}
+              {(() => {
+                const daySections: React.ReactNode[] = [];
+                let currentDayItems: any[] = [];
+                let lastDay = -1;
 
-                if (item.type !== 'poi') {
-                  const eventStyles = {
-                    break: { color: 'text-yellow-400', border: 'border-yellow-500/30 bg-yellow-500/5', label: 'Break' },
-                    accommodation: { color: 'text-indigo-400', border: 'border-indigo-500/30 bg-indigo-500/5', label: 'Stay' },
-                    entertainment: { color: 'text-pink-400', border: 'border-pink-500/30 bg-pink-500/5', label: 'Fun' }
-                  }[item.type as string] || { color: 'text-blue-400', border: 'border-white/5', label: item.type };
+                // Group items into days or handle stay-based transitions
+                const sortedItems = [...trip.items].sort((a, b) => (a.dayIndex || 0) - (b.dayIndex || 0));
 
-                  return (
-                    <div key={item.id} className="relative pl-7 group pb-8">
-                      {!isLast && <div className="absolute left-[7px] top-6 bottom-0 w-[2px] bg-white/10" />}
-                      <div className={`absolute left-0 top-1 w-[16px] h-[16px] rounded-full border-[3px] border-[#1A1A1A] z-10 shadow-lg ${eventStyles.color.replace('text', 'bg')}`} />
-                      
-                      <div className="flex items-center justify-between mb-3 mt-0.5">
-                        <span className={`font-black ${eventStyles.color} text-[10px] uppercase tracking-[0.2em]`}>{eventStyles.label}</span>
-                        <div className="h-px bg-white/10 flex-1 mx-3" />
-                      </div>
-                      <div className={`bg-[#222] rounded-2xl p-4 border ${eventStyles.border} shadow-xl relative overflow-hidden group`}>
-                         <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ${eventStyles.border.replace('border', 'bg').replace('/30', '/5')}`} />
-                         <div className="relative z-10">
-                            <h4 className="text-white font-black tracking-tight text-[15px]">{item.name || `Scheduled ${eventStyles.label}`}</h4>
-                            <div className="flex items-center gap-3 text-[11px] text-gray-500 mt-2 font-bold uppercase tracking-wider">
-                              <span className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-lg"><Clock size={12} className={eventStyles.color} /> {item.duration || '1 hr'}</span>
-                            </div>
-                         </div>
-                      </div>
-                    </div>
-                  );
+                sortedItems.forEach((item, index) => {
+                  const day = item.dayIndex || 0;
+                  if (day !== lastDay) {
+                    if (currentDayItems.length > 0) {
+                      daySections.push(renderDaySection(lastDay, currentDayItems));
+                    }
+                    currentDayItems = [item];
+                    lastDay = day;
+                  } else {
+                    currentDayItems.push(item);
+                  }
+                });
+                
+                if (currentDayItems.length > 0) {
+                  daySections.push(renderDaySection(lastDay, currentDayItems));
                 }
 
-                const poi = allPois.find(p => p.id === item.poiId);
-                if (!poi) return null;
-
-                const groupStyles = {
-                  break: 'border-yellow-500/30 bg-yellow-500/5',
-                  accommodation: 'border-indigo-500/30 bg-indigo-500/5',
-                  entertainment: 'border-pink-500/30 bg-pink-500/5'
-                }[item.group || ''] || 'border-white/5';
-
-                const groupLabel = {
-                  break: 'Break',
-                  accommodation: 'Stay',
-                  entertainment: 'Fun'
-                }[item.group || ''] || poi.category;
-
-                const groupColor = {
-                  break: 'text-yellow-400',
-                  accommodation: 'text-indigo-400',
-                  entertainment: 'text-pink-400',
-                }[item.group || ''] || 'text-[#FF6B6B]';
-
-                return (
-                  <div key={item.id} className="relative pl-7 group">
-                    {!isLast && <div className="absolute left-[7px] top-6 bottom-0 w-[2px] bg-white/5" />}
-                    <div className="absolute left-0 top-1 w-[16px] h-[16px] bg-[#FF6B6B] rounded-full border-[3px] border-[#1A1A1A] z-10 shadow-lg" />
-                    
-                    <div className="flex items-center justify-between mb-3 mt-0.5">
-                      <span className={`font-black text-[10px] uppercase tracking-[0.2em] ${groupColor}`}>{groupLabel}</span>
-                      <div className="h-px bg-white/10 flex-1 mx-3" />
-                    </div>
-
-                    <motion.div layout className="relative overflow-hidden pb-8">
-                      {visualMode === 'detailed' ? (
-                        <div className="flex gap-3 mb-3">
-                          <div className={`w-1 rounded-full ${groupColor.replace('text', 'bg')}`} />
-                          <div className={`flex-1 bg-[#222] rounded-2xl overflow-hidden border ${groupStyles} relative shadow-xl`}>
-                            <div className="relative h-48">
-                              <img src={poi.image} alt={poi.name} className="w-full h-full object-cover select-none" />
-                              <div className="absolute inset-0 bg-gradient-to-t from-[#222] via-transparent to-transparent opacity-80" />
-                              <div className="absolute top-3 left-3 flex flex-wrap gap-2 z-10">
-                                {poi.tags.slice(0, 3).map(tag => (
-                                  <span key={tag} className="bg-black/80 backdrop-blur-md text-white text-[12px] px-3 py-1 rounded-lg font-bold border border-white/10 tracking-tight">
-                                    {tag}
-                                  </span>
-                                ))}
-                                <span className="bg-blue-600/90 backdrop-blur-md text-white text-[10px] px-2.5 py-1 rounded-full font-bold flex items-center gap-1 border border-white/10">
-                                  <Navigation size={10} className="fill-white" /> {travelInfo.distance}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="p-4 cursor-pointer" onClick={() => onPoiClick(poi.id)}>
-                              <div className="flex justify-between items-start mb-1.5">
-                                <h4 className="text-[16px] font-bold text-white tracking-tight leading-snug hover:text-blue-400 transition-colors">{poi.name}</h4>
-                              </div>
-                              <div className="flex items-center justify-between mt-4">
-                                <div className="flex gap-3">
-                                  <Globe size={16} className="text-gray-500 hover:text-white transition-colors cursor-pointer" />
-                                  <MapPin size={16} className="text-gray-500 hover:text-white transition-colors cursor-pointer" />
-                                  <Phone size={16} className="text-gray-500 hover:text-white transition-colors cursor-pointer" />
-                                </div>
-                                <button className="p-2 hover:bg-white/5 rounded-full transition-all text-gray-500 hover:text-red-400" onClick={(e) => { e.stopPropagation(); onRemovePoi(poi.id); }}>
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <motion.div 
-                          drag="x"
-                          dragConstraints={{ left: -100, right: 0 }}
-                          onDragEnd={(_, info) => {
-                            if (info.offset.x < -60) onRemovePoi(poi.id);
-                          }}
-                          className={`flex gap-3 mb-2 bg-[#222] p-4 rounded-xl border ${groupStyles} active:bg-[#2A2A2A] transition-colors relative`}
-                        >
-                          <div className="flex flex-1 items-center justify-between cursor-pointer" onClick={() => onPoiClick(poi.id)}>
-                            <div>
-                              <h4 className="text-[14px] font-bold text-white hover:text-blue-400 transition-colors">{poi.name}</h4>
-                            </div>
-                            <X size={16} className="text-gray-600 hover:text-red-400 transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); onRemovePoi(poi.id); }} />
-                          </div>
-                        </motion.div>
-                      )}
-                    </motion.div>
-
-                    {/* Plus button / Add Event Menu */}
-                    <div className="relative pl-0 py-2">
-                       {showAddMenuIndex === index ? (
-                        <motion.div 
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className="bg-[#1A1A1A] rounded-2xl border border-white/10 p-4 shadow-2xl relative z-20"
-                        >
-                           <div className="grid grid-cols-3 gap-3 mb-3">
-                             {[
-                               { type: 'break', icon: Coffee, color: 'text-yellow-400', label: 'Break' },
-                               { type: 'accommodation', icon: BedDouble, color: 'text-indigo-400', label: 'Stay' },
-                               { type: 'entertainment', icon: TicketIcon, color: 'text-pink-400', label: 'Fun' }
-                             ].map(({ type, icon: Icon, color, label }) => (
-                               <button
-                                 key={type}
-                                 onClick={() => {
-                                   onAddCustomEvent?.(type as TripEventType);
-                                   setShowAddMenuIndex(null);
-                                 }}
-                                 className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all active:scale-95 border border-white/5"
-                               >
-                                 <Icon size={20} className={color} />
-                                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-300">{label}</span>
-                               </button>
-                             ))}
-                           </div>
-                           <button onClick={() => setShowAddMenuIndex(null)} className="w-full py-2 text-gray-500 hover:text-white text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
-                             <X size={12} /> Cancel
-                           </button>
-                        </motion.div>
-                      ) : (
-                        <button 
-                          onClick={() => setShowAddMenuIndex(index)}
-                          className="group flex items-center gap-3 text-gray-500 hover:text-white transition-colors relative z-10"
-                        >
-                          <div className="w-5 h-5 rounded-full bg-[#2A2A2A] border border-white/10 flex items-center justify-center group-hover:bg-[#3B82F6] group-hover:border-[#3B82F6] transition-all">
-                            <Plus size={12} />
-                          </div>
-                          <div className="h-px bg-white/5 flex-1 w-24 group-hover:bg-white/10 transition-colors" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                return daySections;
+              })()}
             </>
           )}
         </div>

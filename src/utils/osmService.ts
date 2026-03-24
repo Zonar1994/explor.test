@@ -4,6 +4,19 @@ import { POI } from '../types';
  * Service to fetch POIs from OpenStreetMap using the Overpass API
  */
 export const fetchOsmPois = async (south: number, west: number, north: number, east: number): Promise<POI[]> => {
+  const cacheKey = `osm_cache_${south.toFixed(3)}_${west.toFixed(3)}_${north.toFixed(3)}_${east.toFixed(3)}`;
+  const cachedData = localStorage.getItem(cacheKey);
+  
+  if (cachedData) {
+    try {
+      const { pois, timestamp } = JSON.parse(cachedData);
+      const isExpired = Date.now() - timestamp > 24 * 60 * 60 * 1000; // 24 hours
+      if (!isExpired) return pois;
+    } catch (e) {
+      localStorage.removeItem(cacheKey);
+    }
+  }
+
   const query = `
     [out:json][timeout:25];
     (
@@ -38,7 +51,7 @@ export const fetchOsmPois = async (south: number, west: number, north: number, e
 
     const data = await response.json();
     
-    return data.elements
+    const results = data.elements
       .filter((el: any) => el.type === 'node' || (el.type === 'way' && el.tags))
       .map((el: any) => {
         const name = el.tags?.name || el.tags?.amenity || el.tags?.tourism || el.tags?.historic || 'Unnamed Spot';
@@ -69,6 +82,22 @@ export const fetchOsmPois = async (south: number, west: number, north: number, e
         } as POI;
       })
       .filter((poi: POI) => poi.lat !== 0 && poi.lng !== 0);
+
+    // Cache the results before returning
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify({
+        pois: results,
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      // If quota exceeded, clear some old cache
+      if (e.name === 'QuotaExceededError') {
+        const keys = Object.keys(localStorage).filter(k => k.startsWith('osm_cache_'));
+        keys.slice(0, 10).forEach(k => localStorage.removeItem(k));
+      }
+    }
+
+    return results;
   } catch (error) {
     console.error('OSM Fetch Error:', error);
     return [];
