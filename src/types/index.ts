@@ -1,9 +1,19 @@
+export type TripEventType = 'poi' | 'break' | 'accommodation' | 'entertainment' | 'drive' | 'flight';
+
+export type TripItem = {
+  id: string; // unique identifier for the timeline item
+  type: TripEventType;
+  poiId?: string; // Only if type === 'poi'
+  name?: string;  // Custom name for manual events
+  duration?: string; // e.g., '2 hrs'
+};
+
 export type Trip = {
   id: string;
   name: string;
   start: string;
   end: string;
-  pois: string[]; // Array of POI IDs
+  items: TripItem[];
 };
 
 export type Review = {
@@ -14,30 +24,30 @@ export type Review = {
   date: string;
 };
 
-export type POI = {
+export interface POI {
   id: string;
   name: string;
-  type: string;
-  tags: string[];
-  distance: string;
+  description: string;
+  image: string;
+  moreImages: string[];
+  lat: number;
+  lng: number;
   rating: number;
   reviews: number;
   hours: string;
-  description: string;
-  addedBy: string;
-  duration: string;
-  image: string;
-  moreImages: string[];
+  tags: string[];
+  distance?: string;
+  category?: 'Nature' | 'City' | 'History' | 'Culture' | 'Food' | 'Stay' | 'Fun';
+  ticketInfo?: string;
+  requirements?: string[];
   weather: {
     temp: number;
     condition: string;
-    forecast: string;
+    icon?: string;
   };
   keyHighlights: string[];
   userReviews: Review[];
-  lat: number;
-  lng: number;
-};
+}
 
 export type ViewState = 'map' | 'swipe' | 'profile' | 'community';
 export type ModalState = 'none' | 'trips' | 'new-trip' | 'trip-details' | 'poi-details' | 'swipe';

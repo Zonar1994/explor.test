@@ -22,9 +22,13 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 interface MapViewProps {
   pois: POI[];
+  tripPois?: POI[];
   onPoiClick: (id: string) => void;
   selectedPoiId?: string | null;
   isModalOpen?: boolean;
+  isDiscoverOpen?: boolean;
+  offsetYOverride?: number;
+  mapType?: 'voyager' | 'light' | 'dark' | 'satellite' | 'hybrid';
 }
 
 function MapController({ center, zoom, offsetY = 0 }: { center: [number, number], zoom?: number, offsetY?: number }) {
@@ -91,10 +95,32 @@ function MapControls({ onPoiClick }: { onPoiClick: (id: string) => void }) {
   );
 }
 
-export function MapView({ pois, onPoiClick, selectedPoiId, isModalOpen }: MapViewProps) {
+export function MapView({ pois, tripPois, onPoiClick, selectedPoiId, isModalOpen, isDiscoverOpen, offsetYOverride, mapType = 'voyager' }: MapViewProps) {
   const defaultCenter: [number, number] = [48.8566, 2.3522]; // Center of Europe roughly (Paris)
   const [zoomLevel, setZoomLevel] = useState(5);
   const ZOOM_THRESHOLD = 4; // POIs appear when zoom is > 4
+
+  // Offset calculation to push markers up to the visible top portion of the screen
+  const getOffsetY = () => {
+    if (offsetYOverride && offsetYOverride > 0) {
+      // The override comes from App.tsx as a screen proportion (e.g. 0.8)
+      // We want to center it at (1 - Proportion) / 2 from the top.
+      const visiblePortion = 1 - (offsetYOverride / 100);
+      const targetCenterPx = (visiblePortion / 2) * window.innerHeight;
+      return (window.innerHeight / 2) - targetCenterPx;
+    }
+    if (!isModalOpen) return 0;
+    if (isDiscoverOpen) return window.innerHeight * 0.38;
+    return window.innerHeight * 0.3;
+  };
+
+  const mapUrls = {
+    voyager: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+    dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    satellite: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    hybrid: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+  };
 
   return (
     <div className="absolute inset-0 z-0">
@@ -105,9 +131,16 @@ export function MapView({ pois, onPoiClick, selectedPoiId, isModalOpen }: MapVie
         zoomControl={false}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          attribution={mapType.includes('satellite') ? "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community" : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}
+          url={mapUrls[mapType]}
         />
+
+        {mapType === 'hybrid' && (
+          <TileLayer
+            attribution="&copy; Esri &mdash; Labels: Esri, DeLorme, HERE, TomTom, Intermap, increment P Corp., GEBCO, USGS, FAO, NPS, NRCAN, GeoBase, IGN, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), swisstopo, MapmyIndia, &copy; OpenStreetMap contributors, and the GIS User Community"
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+          />
+        )}
         
         <ZoomHandler onZoomChange={setZoomLevel} />
         <MapControls onPoiClick={onPoiClick} />
@@ -115,9 +148,38 @@ export function MapView({ pois, onPoiClick, selectedPoiId, isModalOpen }: MapVie
         {selectedPoiId && pois.find(p => p.id === selectedPoiId) && (
           <MapController 
             center={[pois.find(p => p.id === selectedPoiId)!.lat, pois.find(p => p.id === selectedPoiId)!.lng]} 
-            zoom={15} 
-            offsetY={isModalOpen ? window.innerHeight * 0.18 : 0} 
+            zoom={16} 
+            offsetY={getOffsetY()} 
           />
+        )}
+
+        {/* Trip Route Visualization */}
+        {tripPois && tripPois.length > 1 && (
+          <>
+            <Polyline 
+              positions={tripPois.map(p => [p.lat, p.lng])}
+              color="#3B82F6"
+              weight={5}
+              opacity={0.8}
+              lineJoin="round"
+            />
+            {/* Outline for the route */}
+            <Polyline 
+              positions={tripPois.map(p => [p.lat, p.lng])}
+              color="#FFFFFF"
+              weight={8}
+              opacity={0.3}
+              lineJoin="round"
+            />
+            {/* Always show markers for trip POIs */}
+            {tripPois.map(poi => (
+              <Marker 
+                key={`trip-${poi.id}`} 
+                position={[poi.lat, poi.lng]}
+                eventHandlers={{ click: () => onPoiClick(poi.id) }}
+              />
+            ))}
+          </>
         )}
 
         {/* Dash line pointing down to the panel */}
@@ -144,7 +206,7 @@ export function MapView({ pois, onPoiClick, selectedPoiId, isModalOpen }: MapVie
           >
             <Popup>
               <div className="font-semibold">{poi.name}</div>
-              <div className="text-sm text-gray-600">{poi.type}</div>
+              <div className="text-sm text-gray-600">{poi.category}</div>
               <button 
                 className="mt-2 text-blue-600 text-sm font-medium hover:underline"
                 onClick={(e) => {

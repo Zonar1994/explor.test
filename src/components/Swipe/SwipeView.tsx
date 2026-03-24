@@ -1,24 +1,42 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
-import { Heart, X, Navigation, Star, MapPin, Clock, Undo2 } from 'lucide-react';
 import { POI } from '../../types';
+import { fetchWeather, WeatherData } from '../../utils/weather';
+import { WeatherForecastModal } from '../Trips/PoiCard';
+import { MapPin, Clock, Undo2, Star, CheckCircle2, Ticket, Thermometer, Heart, X } from 'lucide-react';
 
 interface SwipeViewProps {
-  pois: POI[];
+  pois: Array<POI>;
   onSave: (poiId: string) => void;
   onSkip: (poiId: string) => void;
   onViewPoiChange?: (poiId: string) => void;
+  activeFilter?: string;
+  onClearFilter?: () => void;
 }
 
-export function SwipeView({ pois, onSave, onSkip, onViewPoiChange }: SwipeViewProps) {
+export function SwipeView({ pois, onSave, onSkip, onViewPoiChange, activeFilter, onClearFilter }: SwipeViewProps) {
+  const filteredPois = activeFilter 
+    ? pois.filter(p => p.category?.toLowerCase() === activeFilter.toLowerCase())
+    : pois;
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
+  const [currentWeather, setCurrentWeather] = useState<WeatherData | null>(null);
+  const [showWeatherModal, setShowWeatherModal] = useState(false);
+  
+  const activePoi = filteredPois[currentIndex];
 
   useEffect(() => {
-    if (onViewPoiChange && pois[currentIndex]) {
-      onViewPoiChange(pois[currentIndex].id);
+    if (activePoi) {
+      fetchWeather(activePoi.lat, activePoi.lng).then(setCurrentWeather);
     }
-  }, [currentIndex, pois, onViewPoiChange]);
+  }, [activePoi]);
+
+  useEffect(() => {
+    if (onViewPoiChange && filteredPois[currentIndex]) {
+      onViewPoiChange(filteredPois[currentIndex].id);
+    }
+  }, [currentIndex, filteredPois, onViewPoiChange]);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-15, 15]);
@@ -39,9 +57,9 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange }: SwipeViewPr
     setDirection(dir);
     // Trigger action immediately or after a short delay for smooth transition
     if (dir === 'right') {
-      onSave(pois[currentIndex].id);
+      onSave(filteredPois[currentIndex].id);
     } else {
-      onSkip(pois[currentIndex].id);
+      onSkip(filteredPois[currentIndex].id);
     }
     
     setTimeout(() => {
@@ -49,7 +67,7 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange }: SwipeViewPr
       setDirection(null);
       x.set(0); 
     }, 200);
-  }, [currentIndex, onSave, onSkip, pois, x]);
+  }, [currentIndex, onSave, onSkip, filteredPois, x]);
 
   const handleUndo = useCallback(() => {
     if (currentIndex > 0) {
@@ -72,7 +90,7 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange }: SwipeViewPr
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSwipe, handleUndo]);
 
-  if (currentIndex >= pois.length) {
+  if (currentIndex >= filteredPois.length) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-[#121212]">
         <div className="w-24 h-24 bg-[#2A2A2A] rounded-full flex items-center justify-center mb-6 border border-white/5">
@@ -85,12 +103,30 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange }: SwipeViewPr
   }
 
   // Show only up to 2 cards at a time (current and next)
-  const stack = pois.slice(currentIndex, currentIndex + 2);
+  const stack = filteredPois.slice(currentIndex, currentIndex + 2);
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center p-2 pb-16 overflow-hidden bg-[#121212]">
-      <div className="relative w-full h-full">
-        <AnimatePresence>
+    <div className="relative w-full h-full flex flex-col items-center justify-center p-2.5 pb-20 overflow-hidden bg-[#121212]">
+      {activeFilter && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] pointer-events-none">
+          <motion.div 
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="px-6 py-2 bg-[#3B82F6]/20 border border-[#3B82F6]/40 backdrop-blur-xl rounded-full flex items-center gap-3 shadow-2xl shadow-blue-500/30 pointer-events-auto"
+          >
+            <div className="w-1.5 h-1.5 bg-[#3B82F6] rounded-full animate-pulse" />
+            <span className="text-[11px] font-black text-[#3B82F6] uppercase tracking-[0.2em]">Discover: {activeFilter}</span>
+            <button 
+              onClick={(e) => { e.stopPropagation(); onClearFilter?.(); }}
+              className="p-1 hover:bg-white/10 rounded-full transition-colors ml-1"
+            >
+              <X size={10} className="text-[#3B82F6]" />
+            </button>
+          </motion.div>
+        </div>
+      )}
+      <div className="relative w-full h-full max-h-[85dvh]">
+        <AnimatePresence mode="popLayout">
           {stack.map((poi, index) => {
             const isTop = index === 0;
             return (
@@ -99,30 +135,28 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange }: SwipeViewPr
                 style={isTop ? { x, rotate, opacity, zIndex: 10 } : { zIndex: 5 }}
                 drag={isTop ? "x" : false}
                 dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.7}
+                dragTransition={{ bounceStiffness: 600, bounceDamping: 35 }}
                 onDragEnd={handleDragEnd}
                 initial={{ 
-                  scale: isTop ? 1 : 0.92, 
+                  scale: isTop ? 1 : 0.94, 
                   opacity: 0, 
-                  y: isTop ? 0 : 15 
+                  y: isTop ? 0 : 10
                 }}
                 animate={{ 
-                  scale: isTop ? 1 : 0.92, 
+                  scale: isTop ? 1 : 0.94, 
                   opacity: 1, 
-                  y: isTop ? 0 : 15,
-                  x: isTop && direction === 'left' ? -500 : isTop && direction === 'right' ? 500 : 0,
-                  rotate: isTop && direction === 'left' ? -30 : isTop && direction === 'right' ? 30 : 0
+                  y: isTop ? 0 : 10,
+                  x: isTop && direction === 'left' ? -1000 : isTop && direction === 'right' ? 1000 : 0,
+                  rotate: isTop && direction === 'left' ? -35 : isTop && direction === 'right' ? 35 : 0
                 }}
                 exit={{ 
                   opacity: 0, 
                   scale: 0.9,
-                  transition: { duration: 0.2 }
+                  transition: { duration: 0.15 }
                 }}
-                transition={{ 
-                  type: 'spring', 
-                  stiffness: 300, 
-                  damping: 30 
-                }}
-                className="absolute inset-0 w-full h-full bg-[#1A1A1A] rounded-[32px] shadow-2xl overflow-hidden flex flex-col border border-white/5 cursor-grab active:cursor-grabbing origin-bottom"
+                whileTap={{ cursor: 'grabbing', scale: 0.98 }}
+                className="absolute inset-x-0 inset-y-0 w-full h-full bg-[#1A1A1A] rounded-[32px] shadow-2xl overflow-hidden flex flex-col border border-white/5 cursor-grab origin-bottom touch-none"
               >
                 {/* Image Section - Scrollable Gallery */}
                 <div className="relative h-[40%] w-full shrink-0 overflow-hidden group/gallery">
@@ -147,19 +181,26 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange }: SwipeViewPr
                   </div>
 
                   {/* Tags */}
-                  <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 pointer-events-none">
+                  <div className="absolute top-3 left-3 flex flex-wrap gap-2 pointer-events-none">
                     {poi.tags.slice(0, 3).map(tag => (
-                      <span key={tag} className="bg-black/60 backdrop-blur-md text-white text-[10px] px-3 py-1 rounded-xl font-bold border border-white/10 tracking-tight">
+                      <span key={tag} className="bg-black/60 backdrop-blur-md text-white text-[12px] px-4 py-1.5 rounded-2xl font-bold border border-white/10 tracking-tight whitespace-nowrap">
                         {tag}
                       </span>
                     ))}
                   </div>
 
                   {/* Weather Badge */}
-                  <div className="absolute top-3 right-3 bg-white/10 backdrop-blur-md border border-white/10 rounded-xl px-2.5 py-1 flex items-center gap-2 pointer-events-none">
-                    <span className="text-white font-bold text-[12px]">{poi.weather.temp}°</span>
-                    <span className="text-white/60 text-[10px] font-medium uppercase tracking-wider">{poi.weather.condition}</span>
-                  </div>
+                  <button 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      if (isTop) setShowWeatherModal(true); 
+                    }}
+                    className={`absolute top-3 right-3 bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-2 flex items-center gap-2 transition-all ${isTop ? 'cursor-pointer pointer-events-auto hover:bg-white/20 active:scale-95' : 'pointer-events-none'}`}
+                  >
+                    <Thermometer size={14} className="text-blue-400" />
+                    <span className="text-white font-bold text-[14px]">{(isTop ? currentWeather?.temp : poi.weather.temp) || 15}°</span>
+                    <span className="text-white/60 text-[11px] font-bold uppercase tracking-widest">{(isTop ? currentWeather?.condition : poi.weather.condition) || 'Sunny'}</span>
+                  </button>
                 </div>
 
                 {/* Content Section */}
@@ -188,11 +229,40 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange }: SwipeViewPr
                   </div>
 
                   <div className="mb-6">
-                    <h3 className="text-gray-500 uppercase tracking-widest text-[9px] font-black mb-2">About</h3>
-                    <p className="text-gray-400 text-[13px] leading-relaxed font-medium">
+                    <h3 className="text-gray-500 uppercase tracking-widest text-[10px] font-black mb-3">About</h3>
+                    <p className="text-gray-300 text-[14px] leading-relaxed font-medium">
                       {poi.description}
                     </p>
                   </div>
+
+                  {/* Requirements & Tickets */}
+                  {(poi.requirements || poi.ticketInfo) && (
+                    <div className="mb-6 p-4 bg-white/5 rounded-2xl border border-white/5 space-y-4">
+                       <h3 className="text-gray-500 uppercase tracking-widest text-[10px] font-black">Know before you go</h3>
+                       <div className="grid grid-cols-1 gap-4">
+                          {poi.requirements && (
+                            <div className="space-y-2">
+                               <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wide flex items-center gap-2">
+                                  <CheckCircle2 size={12} className="text-blue-400" /> Requirements
+                               </span>
+                               <div className="flex flex-wrap gap-2">
+                                  {poi.requirements.map((req, i) => (
+                                    <span key={i} className="text-[12px] text-gray-200 bg-white/5 px-3 py-1 rounded-lg border border-white/5">{req}</span>
+                                  ))}
+                               </div>
+                            </div>
+                          )}
+                          {poi.ticketInfo && (
+                            <div className="space-y-2">
+                               <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wide flex items-center gap-2">
+                                  <Ticket size={12} className="text-blue-400" /> Ticket Info
+                               </span>
+                               <p className="text-[13px] text-gray-300 leading-snug">{poi.ticketInfo}</p>
+                            </div>
+                          )}
+                       </div>
+                    </div>
+                  )}
 
                   {/* Reviews Section */}
                   <div className="mt-2 border-t border-white/5 pt-4 mb-4">
@@ -211,7 +281,7 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange }: SwipeViewPr
                                 <Star key={j} size={8} className={j < rev.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-700"} />
                               ))}
                             </div>
-                            <p className="text-gray-300 text-[11px] leading-normal italic line-clamp-2">"{rev.comment}"</p>
+                            <p className="text-gray-300 text-[12px] leading-relaxed italic">"{rev.comment}"</p>
                           </div>
                         </div>
                       )) : (
@@ -255,6 +325,11 @@ export function SwipeView({ pois, onSave, onSkip, onViewPoiChange }: SwipeViewPr
         </button>
       </div>
 
+      <WeatherForecastModal 
+        poi={activePoi} 
+        isOpen={showWeatherModal} 
+        onClose={() => setShowWeatherModal(false)} 
+      />
     </div>
   );
 }

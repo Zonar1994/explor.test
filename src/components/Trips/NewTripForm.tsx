@@ -11,7 +11,6 @@ interface NewTripFormProps {
 export function NewTripForm({ onClose, onCreate }: NewTripFormProps) {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [activeField, setActiveField] = useState<'start' | 'end' | 'none'>('start');
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -27,7 +26,7 @@ export function NewTripForm({ onClose, onCreate }: NewTripFormProps) {
       name: formData.get('name') as string || 'New Trip',
       start: formData.get('start') as string || 'TBD',
       end: (formData.get('end') as string) || 'TBD',
-      pois: []
+      items: []
     };
     onCreate(newTrip);
   };
@@ -61,47 +60,32 @@ export function NewTripForm({ onClose, onCreate }: NewTripFormProps) {
         
         <div className="flex gap-4 relative z-[1000]">
           <div className="flex-1">
-            <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 px-1 transition-colors ${activeField === 'start' ? 'text-blue-400' : 'text-gray-400'}`}>Start</label>
-            <div className={`rounded-xl transition-all duration-300 ${activeField === 'start' ? 'ring-2 ring-blue-500/50' : ''}`}>
+            <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5 px-1 text-gray-400 focus-within:text-blue-400 transition-colors">Start</label>
+            <div className="rounded-xl transition-all duration-300 focus-within:ring-2 focus-within:ring-blue-500/50">
               <DatePicker 
                 name="start"
                 value={startDate}
                 onChange={(v) => { 
                   setStartDate(v); 
                   setError(null);
-                  if (activeField === 'start') {
-                    // Auto-advance to end date after a small delay to ensure smooth transition
-                    setTimeout(() => setActiveField('end'), 10);
-                  }
                 }}
                 placeholder="Start Date"
                 align="left"
-                isOpen={activeField === 'start'}
-                onToggle={() => setActiveField(prev => prev === 'start' ? 'none' : 'start')}
               />
             </div>
           </div>
           <div className="flex-1">
-            <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 px-1 transition-colors ${activeField === 'end' ? 'text-blue-400' : 'text-gray-400'}`}>End (optional)</label>
-            <div className={`rounded-xl transition-all duration-300 ${activeField === 'end' ? 'ring-2 ring-blue-500/50' : ''}`}>
+            <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5 px-1 text-gray-400 focus-within:text-blue-400 transition-colors">End (optional)</label>
+            <div className="rounded-xl transition-all duration-300 focus-within:ring-2 focus-within:ring-blue-500/50">
               <DatePicker 
                 name="end"
                 value={endDate}
                 onChange={(v) => { 
                   setEndDate(v); 
                   setError(null);
-                  if (activeField === 'end' && !startDate) {
-                    // If user selects end date first, move to start
-                    setTimeout(() => setActiveField('start'), 10);
-                  } else if (activeField === 'end') {
-                    // Just close it
-                    setActiveField('none');
-                  }
                 }}
                 placeholder="End Date"
                 align="right"
-                isOpen={activeField === 'end'}
-                onToggle={() => setActiveField(prev => prev === 'end' ? 'none' : 'end')}
               />
             </div>
           </div>
