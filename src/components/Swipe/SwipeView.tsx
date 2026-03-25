@@ -49,10 +49,12 @@ export function SwipeView({ pois, onSave, onSkip, onFinish, onViewPoiChange, act
   const badgeScale = useTransform(x, (v) => Math.abs(v) > 20 ? 1 : 0.8);
 
   const handleDragEnd = (event: any, info: any) => {
-    const threshold = 80;
-    if (info.offset.x > threshold) {
+    const threshold = 100;
+    const velocityThreshold = 500;
+    
+    if (info.offset.x > threshold || info.velocity.x > velocityThreshold) {
       handleSwipe('right');
-    } else if (info.offset.x < -threshold) {
+    } else if (info.offset.x < -threshold || info.velocity.x < -velocityThreshold) {
       handleSwipe('left');
     } else {
       x.set(0);
@@ -177,7 +179,7 @@ export function SwipeView({ pois, onSave, onSkip, onFinish, onViewPoiChange, act
                 style={isTop ? { x, rotate, opacity, zIndex: 10 } : { zIndex: 5 }}
                 drag={isTop && !hideActions ? "x" : false}
                 dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.7}
+                dragElastic={0.9}
                 dragTransition={{ bounceStiffness: 600, bounceDamping: 35 }}
                 onDragEnd={handleDragEnd}
                 initial={{ 
@@ -200,7 +202,7 @@ export function SwipeView({ pois, onSave, onSkip, onFinish, onViewPoiChange, act
                   transition: { duration: 0.4, ease: "easeOut" }
                 }}
                 whileTap={{ cursor: 'grabbing', scale: 0.98 }}
-                className="absolute inset-x-0 inset-y-0 w-full h-full bg-[#1A1A1A] rounded-[32px] shadow-2xl overflow-hidden flex flex-col border border-white/5 cursor-grab origin-bottom touch-none"
+                className="absolute inset-x-0 inset-y-0 w-full h-full bg-[#1A1A1A] rounded-[32px] shadow-2xl overflow-hidden flex flex-col border border-white/5 cursor-grab origin-bottom touch-pan-y"
               >
                 {/* Image Section - Tap and Interaction-friendly */}
                 <div className="relative h-[45%] w-full shrink-0 overflow-hidden group/gallery bg-[#111]">

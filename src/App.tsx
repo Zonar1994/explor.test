@@ -327,7 +327,28 @@ export default function App() {
   };
 
   const selectedTrip = trips.find(t => t.id === selectedTripId);
-  const selectedPoi = osmPois.find(p => p.id === selectedPoiId);
+  const selectedPoi = osmPois.find(p => p.id === selectedPoiId) || 
+                     likedPois.find(p => p.id === selectedPoiId) ||
+                     (() => {
+                        const item = trips.flatMap(t => t.items).find(i => i.poiId === selectedPoiId || i.id === selectedPoiId);
+                        if (!item || !item.lat || !item.lng) return null;
+                        return {
+                          id: (item.poiId || item.id) as string,
+                          name: item.name || 'Place',
+                          lat: item.lat,
+                          lng: item.lng,
+                          image: item.image || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800',
+                          category: (item.group ? item.group.charAt(0).toUpperCase() + item.group.slice(1) : 'Fun') as any,
+                          tags: [item.type],
+                          description: 'From your trip',
+                          moreImages: [],
+                          rating: 5,
+                          reviews: 0,
+                          keyHighlights: [],
+                          userReviews: [],
+                          weather: { temp: 15, condition: 'Sunny' }
+                        } as POI;
+                     })();
   
   const [mapRef, setMapRef] = useState<L.Map | null>(null);
 
@@ -429,9 +450,8 @@ export default function App() {
               {/* Drag Handle Container (Invisible indicator, entirely functional) */}
               {!isExpanded && (
                 <div 
-                  className="absolute top-0 left-0 right-0 h-14 flex items-center justify-center z-[4000] cursor-ns-resize"
+                  className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 flex items-center justify-center z-[4000] cursor-ns-resize group"
                   onPointerDown={(e) => {
-                    // Prevent text selection while dragging
                     (e.target as HTMLElement).setAttribute('data-dragging', 'true');
                   }}
                 >
@@ -446,7 +466,7 @@ export default function App() {
                         return Math.min(Math.max(next, 25), 95);
                       });
                     }}
-                    className="w-full h-full opacity-0"
+                    className="w-12 h-1.5 bg-white/20 rounded-full group-hover:bg-white/40 transition-all shadow-sm"
                   />
                 </div>
               )}
@@ -505,13 +525,13 @@ export default function App() {
                   />
               )}
 
-              {activeModal === 'poi-details' && selectedPoiId && (
+              {activeModal === 'poi-details' && selectedPoiId && selectedPoi && (
                   <PoiDetails 
-                    poi={selectedPoi!} 
+                    poi={selectedPoi} 
                     trips={trips}
                     activeTripId={selectedTripId}
                     allPois={osmPois}
-                    hideAddButton={false} // Always show add to allow re-categorization
+                    hideAddButton={false}
                     onClose={() => {
                       setSelectedPoiId(null);
                       setActiveModal(selectedTripId ? 'trip-details' : 'trips');
