@@ -23,6 +23,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : { breakStyle: 'Coffee Shops & Casual', accommodationType: 'Boutique Hotels', entertainmentStyle: 'Live Music & Arts', hasSeenOnboarding: false };
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(!userPrefs.hasSeenOnboarding);
+  const [isDiscovering, setIsDiscovering] = useState(false);
 
   const toggleMapType = () => {
     const types: ('voyager' | 'light' | 'dark' | 'satellite' | 'hybrid')[] = ['hybrid', 'satellite', 'voyager', 'light', 'dark'];
@@ -55,7 +56,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
   const [viewMode, setViewMode] = useState<'active' | 'archived' | 'liked'>('active');
-  const [likedPoiIds, setLikedPoiIds] = useState<string[]>(() => {
+  const [likedPois, setLikedPois] = useState<POI[]>(() => {
     const saved = localStorage.getItem('explor_liked_pois');
     return saved ? JSON.parse(saved) : [];
   });
@@ -72,8 +73,8 @@ export default function App() {
   }, [archivedTrips]);
 
   useEffect(() => {
-    localStorage.setItem('explor_liked_pois', JSON.stringify(likedPoiIds));
-  }, [likedPoiIds]);
+    localStorage.setItem('explor_liked_pois', JSON.stringify(likedPois));
+  }, [likedPois]);
 
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null);
@@ -100,7 +101,7 @@ export default function App() {
     setTrips([newTrip, ...trips]);
     setSelectedTripId(newTrip.id);
     setActiveModal('trip-details');
-    setModalHeight(40); // Small for start location step
+    setModalHeight(48); // Slightly taller for start location screen
     toast.success('Trip created! Where are we starting?');
   };
 
@@ -189,7 +190,12 @@ export default function App() {
     
     // If no trip ID, it's a global discover
     if (!tripId) {
-      setLikedPoiIds(prev => Array.from(new Set([...prev, ...poiIds])));
+      setLikedPois(prev => {
+        const newPois = poiIds.map(id => osmPois.find(p => p.id === id)).filter(Boolean) as POI[];
+        const merged = [...prev];
+        newPois.forEach(np => { if (!merged.some(m => m.id === np.id)) merged.push(np); });
+        return merged;
+      });
       setActiveModal('trips');
       toast.success(`Saved ${poiIds.length} places to your Liked list!`, {
         icon: <Heart className="text-pink-500 fill-pink-500" />,
@@ -260,18 +266,18 @@ export default function App() {
       };
     }));
     
+    setIsDiscovering(true);
     // Trigger a POI fetch around this new waypoint
     const radius = 0.05; // ~5km
     const newPois = await fetchOsmPois(lat - radius, lng - radius, lat + radius, lng + radius);
     setOsmPois(newPois);
+    setIsDiscovering(false);
 
-    setModalHeight(62); // Back to normal
+    setModalHeight(75); // Ready for swipe deck height
     toast.success("Start point set! Discovering places nearby...");
     
-    // Auto-open discovery if they haven't added anything else yet
-    setTimeout(() => {
-      setActiveModal('swipe');
-    }, 1500);
+    // Auto-open discovery instantly
+    setActiveModal('swipe');
   };
 
   const handleAddCustomEvent = (tripId: string, type: TripEventType) => {
@@ -444,8 +450,8 @@ export default function App() {
                   viewMode={viewMode}
                   onSetViewMode={setViewMode}
                   archivedTrips={archivedTrips}
-                  likedPois={likedPoiIds.map(id => osmPois.find(p => p.id === id)).filter(Boolean) as POI[]}
-                  onRemoveLikedPoi={(id) => setLikedPoiIds(prev => prev.filter(pId => pId !== id))}
+                  likedPois={likedPois}
+                  onRemoveLikedPoi={(id) => setLikedPois(prev => prev.filter(p => p.id !== id))}
                   mapType={mapType}
                   setMapType={setMapType}
                   onMapTypeToggle={toggleMapType}
@@ -477,6 +483,7 @@ export default function App() {
                     onMapTypeToggle={toggleMapType}
                     setMapType={setMapType}
                     onWaypointSet={handleWaypointSet}
+                    isDiscovering={isDiscovering}
                     onPoiHover={setSelectedPoiId}
                     selectedPoiId={selectedPoiId}
                   />

@@ -73,7 +73,7 @@ export function PoiDetails({ poi, trips, activeTripId, allPois, hideAddButton, o
 
   return (
     <div className="flex flex-col h-full bg-[#121212] text-white overflow-hidden relative">
-      <div className="flex justify-between items-center px-4 py-2.5 border-b border-white/5 bg-[#121212] z-50">
+      <div className="flex justify-between items-center px-4 py-2.5 border-b border-white/5 bg-[#121212] relative z-[5000]">
         <button onClick={onClose} className="p-3 -ml-2 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center group" title="Back">
           <ArrowLeft size={22} className="text-gray-300 group-hover:text-white" />
         </button>

@@ -195,7 +195,11 @@ export function SwipeView({ pois, onSave, onSkip, onFinish, onViewPoiChange, act
               >
                 {/* Image Section - Scrollable Gallery */}
                 <div className="relative h-[40%] w-full shrink-0 overflow-hidden group/gallery">
-                  <div className="flex h-full w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide pointer-events-auto touch-pan-y">
+                  <div 
+                    className="flex h-full w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide pointer-events-auto touch-pan-x cursor-auto"
+                    onPointerDownCapture={(e) => e.stopPropagation()}
+                    onTouchStartCapture={(e) => e.stopPropagation()}
+                  >
                     {[poi.image, ...poi.moreImages].map((img, i) => (
                       <div key={i} className="min-w-full h-full snap-center relative">
                         <img 
@@ -226,6 +230,8 @@ export function SwipeView({ pois, onSave, onSkip, onFinish, onViewPoiChange, act
 
                   {/* Weather Badge */}
                   <button 
+                    onPointerDownCapture={(e) => e.stopPropagation()}
+                    onTouchStartCapture={(e) => e.stopPropagation()}
                     onClick={(e) => { 
                       e.stopPropagation(); 
                       if (isTop) setShowWeatherModal(true); 

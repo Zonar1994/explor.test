@@ -22,6 +22,7 @@ interface TripDetailsProps {
   setMapType?: (type: 'voyager' | 'light' | 'dark' | 'satellite' | 'hybrid') => void;
   onPoiHover?: (id: string | null) => void;
   selectedPoiId?: string | null;
+  isDiscovering?: boolean;
 }
 
 export function TripDetails({
@@ -42,7 +43,8 @@ export function TripDetails({
   selectedDayIndex,
   onDayChange,
   onPoiHover,
-  selectedPoiId
+  selectedPoiId,
+  isDiscovering
 }: TripDetailsProps) {
   const [visualMode, setVisualMode] = React.useState<'detailed' | 'compact'>('detailed');
   const [showAddMenuIndex, setShowAddMenuIndex] = React.useState<number | null>(null);
@@ -220,8 +222,26 @@ export function TripDetails({
             );
           }
 
-          const poi = allPois.find(p => p.id === item.poiId);
-          if (!poi) return null;
+          const syntheticPoi: POI | null = allPois.find(p => p.id === item.poiId) || (item.name && item.lat && item.lng ? {
+            id: (item.poiId || item.id) as string,
+            name: item.name as string,
+            image: item.image as string || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800',
+            category: (item.group ? item.group.charAt(0).toUpperCase() + item.group.slice(1) : 'City') as any,
+            lat: item.lat,
+            lng: item.lng,
+            tags: [item.group || 'Fun'],
+            description: '',
+            moreImages: [],
+            rating: 5,
+            reviews: 0,
+            hours: 'N/A',
+            keyHighlights: [],
+            userReviews: [],
+            weather: undefined,
+          } : null);
+
+          if (!syntheticPoi) return null;
+          const poi = syntheticPoi;
 
           const groupStyles = {
             break: 'border-yellow-500/30 bg-yellow-500/5',
@@ -442,18 +462,30 @@ export function TripDetails({
 
                   <button 
                     onClick={() => {
-                      // Mock current location for now
-                      onWaypointSet?.(51.5583, 5.0833);
+                      if (!isDiscovering) onWaypointSet?.(51.5583, 5.0833);
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-2 bg-blue-500 text-white rounded-xl text-[12px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-blue-500/20"
+                    disabled={isDiscovering}
+                    className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg ${isDiscovering ? 'bg-blue-600/50 cursor-wait text-white/70 shadow-blue-500/10' : 'bg-blue-500 hover:bg-blue-600 text-white shadow-blue-500/20'}`}
                   >
-                    <Navigation size={14} className="fill-white" /> Use Current Location
+                    {isDiscovering ? (
+                      <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Fetching...</>
+                    ) : (
+                      <><Navigation size={14} className="fill-white" /> Use Current Location</>
+                    )}
                   </button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mt-4">
-                  <button className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-all active:scale-95">
-                    <Navigation size={18} className="text-blue-400" />
+                  <button 
+                    disabled={isDiscovering}
+                    onClick={() => { if (!isDiscovering) onWaypointSet?.(51.5583, 5.0833); }}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all active:scale-95 ${isDiscovering ? 'bg-blue-500/5 border-blue-500/10 cursor-wait' : 'bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20'}`}
+                  >
+                    {isDiscovering ? (
+                      <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin my-[1px]" />
+                    ) : (
+                      <Navigation size={18} className="text-blue-400" />
+                    )}
                     <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Current</span>
                   </button>
                   <button 
