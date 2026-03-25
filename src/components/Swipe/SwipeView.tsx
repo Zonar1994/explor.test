@@ -49,8 +49,8 @@ export function SwipeView({ pois, onSave, onSkip, onFinish, onViewPoiChange, act
   const badgeScale = useTransform(x, (v) => Math.abs(v) > 20 ? 1 : 0.8);
 
   const handleDragEnd = (event: any, info: any) => {
-    const threshold = 100;
-    const velocityThreshold = 500;
+    const threshold = 50;
+    const velocityThreshold = 300;
     
     if (info.offset.x > threshold || info.velocity.x > velocityThreshold) {
       handleSwipe('right');
@@ -179,7 +179,8 @@ export function SwipeView({ pois, onSave, onSkip, onFinish, onViewPoiChange, act
                 style={isTop ? { x, rotate, opacity, zIndex: 10 } : { zIndex: 5 }}
                 drag={isTop && !hideActions ? "x" : false}
                 dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.9}
+                dragElastic={0.7}
+                dragDirectionLock
                 dragTransition={{ bounceStiffness: 600, bounceDamping: 35 }}
                 onDragEnd={handleDragEnd}
                 initial={{ 

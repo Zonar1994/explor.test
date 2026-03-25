@@ -97,7 +97,8 @@ export function TripDetails({
   
   const generateDateTabs = () => {
     if (!trip.start || trip.start === 'TBD') return ['Day 1'];
-    const start = new Date(trip.start);
+    const [year, month, day] = trip.start.split('-').map(Number);
+    const start = new Date(year, month - 1, day);
     const tabs = [];
     for (let i = 0; i < (trip.days || 1); i++) {
       const current = new Date(start);
@@ -567,7 +568,8 @@ export function TripDetails({
                 let lastDay = -1;
 
                 // Group items into days or handle stay-based transitions
-                const sortedItems = [...trip.items].sort((a, b) => (a.dayIndex || 0) - (b.dayIndex || 0));
+                const startPointId = trip.items[0]?.id;
+                const sortedItems = [...trip.items].filter(i => i.id !== startPointId).sort((a, b) => (a.dayIndex || 0) - (b.dayIndex || 0));
 
                 sortedItems.forEach((item, index) => {
                   const day = item.dayIndex || 0;

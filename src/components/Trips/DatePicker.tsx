@@ -77,6 +77,7 @@ export function DatePicker({ value, onChange, placeholder, name, align = 'center
           <button
             type="button"
             key={day.toString()}
+            disabled={!isCurrentMonth}
             onClick={(e) => {
               e.stopPropagation();
               onChange(format(cloneDay, 'yyyy-MM-dd'));
