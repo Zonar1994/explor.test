@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
+import { motion, AnimatePresence, useMotionValue, useTransform, useDragControls } from 'motion/react';
 import { POI } from '../../types';
 import { fetchWeather, WeatherData } from '../../utils/weather';
 import { WeatherForecastModal } from '../Trips/PoiCard';
@@ -41,6 +41,7 @@ export function SwipeView({ pois, onSave, onSkip, onFinish, onViewPoiChange, act
   }, [activePoi]);
 
   const x = useMotionValue(0);
+  const dragControls = useDragControls();
   const rotate = useTransform(x, [-200, 200], [-18, 18]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
   
@@ -178,6 +179,8 @@ export function SwipeView({ pois, onSave, onSkip, onFinish, onViewPoiChange, act
                 key={poi.id}
                 style={isTop ? { x, rotate, opacity, zIndex: 10 } : { zIndex: 5 }}
                 drag={isTop && !hideActions ? "x" : false}
+                dragListener={false}
+                dragControls={dragControls}
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.7}
                 dragDirectionLock
@@ -238,25 +241,40 @@ export function SwipeView({ pois, onSave, onSkip, onFinish, onViewPoiChange, act
                     </>
                   )}
 
-                  {/* Tap regions for image switching */}
-                  <div className="absolute inset-x-0 inset-y-0 flex animate-in fade-in duration-500">
-                    <div 
-                      className="w-1/3 h-full cursor-w-resize" 
-                      onClick={(e) => {
-                        e.stopPropagation();
+                  {/* Tap and Swipe regions for image switching */}
+                  <motion.div 
+                    className="absolute inset-x-0 inset-y-0 z-20"
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.2}
+                    onDragEnd={(e, info) => {
+                      const max = [poi.image, ...poi.moreImages].length;
+                      if (info.offset.x > 40) {
                         setCurrentImageIndex(prev => Math.max(0, prev - 1));
-                      }}
-                    />
-                    <div className="w-1/3 h-full" /> {/* Buffer for central swipe */}
-                    <div 
-                      className="w-1/3 h-full cursor-e-resize" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const max = [poi.image, ...poi.moreImages].length;
+                      } else if (info.offset.x < -40) {
                         setCurrentImageIndex(prev => Math.min(max - 1, prev + 1));
-                      }}
-                    />
-                  </div>
+                      }
+                    }}
+                  >
+                    <div className="flex w-full h-full animate-in fade-in duration-500">
+                      <div 
+                        className="w-1/3 h-full cursor-w-resize" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentImageIndex(prev => Math.max(0, prev - 1));
+                        }}
+                      />
+                      <div className="w-1/3 h-full" /> {/* Buffer for central swipe */}
+                      <div 
+                        className="w-1/3 h-full cursor-e-resize" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const max = [poi.image, ...poi.moreImages].length;
+                          setCurrentImageIndex(prev => Math.min(max - 1, prev + 1));
+                        }}
+                      />
+                    </div>
+                  </motion.div>
                   <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] via-transparent to-transparent pointer-events-none" />
                   
                   {/* Indicators (Simplified for tap) */}
@@ -292,7 +310,13 @@ export function SwipeView({ pois, onSave, onSkip, onFinish, onViewPoiChange, act
                 </div>
 
                 {/* Content Section */}
-                <div className="px-5 pt-1 pb-16 flex-1 flex flex-col justify-start -mt-5 relative z-10 overflow-y-auto custom-scrollbar">
+                <div 
+                  className="px-5 pt-1 pb-16 flex-1 flex flex-col justify-start -mt-5 relative z-10 overflow-y-auto custom-scrollbar"
+                  onPointerDown={(e) => {
+                    if (isTop && !hideActions) dragControls.start(e);
+                  }}
+                  style={{ touchAction: 'pan-y' }}
+                >
                   <h2 className="text-[20px] font-bold text-white leading-tight mb-2 tracking-tight">{poi.name}</h2>
 
                   <div className="flex flex-wrap items-center gap-3 mb-4 font-bold uppercase tracking-wider text-[10px]">
