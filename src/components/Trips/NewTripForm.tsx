@@ -29,15 +29,17 @@ export function NewTripForm({ onClose, onCreate }: NewTripFormProps) {
     if (startDate && endDate) {
       const d1 = new Date(startDate);
       const d2 = new Date(endDate);
-      const diffTime = Math.abs(d2.getTime() - d1.getTime());
-      days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      if (!isNaN(d1.getTime()) && !isNaN(d2.getTime())) {
+        const diffTime = Math.abs(d2.getTime() - d1.getTime());
+        days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      }
     }
 
     const newTrip: Trip = {
-      id: Date.now().toString(),
-      name: formData.get('name') as string || 'New Trip',
-      start: startStr,
-      end: endStr,
+      id: `trip-${Date.now()}`,
+      name: (formData.get('name') as string) || 'New Trip',
+      start: startDate || 'TBD',
+      end: endDate || 'TBD',
       items: [],
       days
     };

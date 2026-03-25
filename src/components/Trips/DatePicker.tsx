@@ -123,7 +123,7 @@ export function DatePicker({ value, onChange, placeholder, name, align = 'center
       </button>
 
       {isOpen && (
-        <div className={`absolute z-[3000] mt-4 p-5 bg-[#1F1F1F] border border-white/10 rounded-[32px] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.9)] w-[320px] sm:w-[350px] animate-in fade-in zoom-in-95 duration-200 ${
+        <div className={`absolute z-[3000] mt-3 p-4 bg-[#1F1F1F] border border-white/10 rounded-[28px] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.9)] w-[290px] xs:w-[320px] sm:w-[350px] animate-in fade-in zoom-in-95 duration-200 ${
           align === 'left' ? 'left-0 origin-top-left' :
           align === 'right' ? 'right-0 origin-top-right' :
           'left-1/2 -translate-x-1/2 origin-top'

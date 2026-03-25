@@ -95,13 +95,16 @@ export default function App() {
     setIsExpanded(!isExpanded);
   };
   
-  const handleOpenNewTrip = () => setActiveModal('new-trip');
+  const handleOpenNewTrip = () => {
+    setActiveModal('new-trip');
+    setModalHeight(80);
+  };
   
   const handleCreateTrip = (newTrip: Trip) => {
     setTrips([newTrip, ...trips]);
     setSelectedTripId(newTrip.id);
     setActiveModal('trip-details');
-    setModalHeight(48); // Slightly taller for start location screen
+    setModalHeight(52); // Optimized height for the new compact start location card
     toast.success('Trip created! Where are we starting?');
   };
 
@@ -415,11 +418,13 @@ export default function App() {
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: 50, opacity: 0, scale: 0.95 }}
               transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-              className={`bg-[#1A1A1A] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col pointer-events-auto border border-white/10 ${
+              className={`bg-[#1A1A1A] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] flex flex-col pointer-events-auto border border-white/10 ${
+                activeModal === 'new-trip' ? 'overflow-visible' : 'overflow-hidden'
+              } ${
                 isExpanded ? 'fixed inset-0 w-full h-[100dvh] rounded-none z-[3000]' : 
                 'w-full max-w-[500px] rounded-t-[32px] md:rounded-[24px] relative self-end md:self-center'
               }`}
-              style={!isExpanded ? { height: `${modalHeight}dvh` } : {}}
+              style={!isExpanded ? { height: `${modalHeight}dvh`, transition: 'height 0.3s ease' } : {}}
             >
               {/* Drag Handle Container (Invisible indicator, entirely functional) */}
               {!isExpanded && (

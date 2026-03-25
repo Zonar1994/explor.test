@@ -22,6 +22,7 @@ export function SwipeView({ pois, onSave, onSkip, onFinish, onViewPoiChange, act
     : pois;
 
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
   const [likedPois, setLikedPois] = useState<string[]>([]);
   const [currentWeather, setCurrentWeather] = useState<WeatherData | null>(null);
@@ -30,17 +31,25 @@ export function SwipeView({ pois, onSave, onSkip, onFinish, onViewPoiChange, act
   const activePoi = filteredPois[currentIndex];
 
   useEffect(() => {
+    setCurrentImageIndex(0); // Reset image when POI changes
+  }, [currentIndex]);
+
+  useEffect(() => {
     if (activePoi) {
       fetchWeather(activePoi.lat, activePoi.lng).then(setCurrentWeather);
     }
   }, [activePoi]);
 
   const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 200], [-15, 15]);
+  const rotate = useTransform(x, [-200, 200], [-18, 18]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
+  
+  const likeOpacity = useTransform(x, [50, 150], [0, 1]);
+  const skipOpacity = useTransform(x, [-50, -150], [0, 1]);
+  const badgeScale = useTransform(x, (v) => Math.abs(v) > 20 ? 1 : 0.8);
 
   const handleDragEnd = (event: any, info: any) => {
-    const threshold = 100;
+    const threshold = 80;
     if (info.offset.x > threshold) {
       handleSwipe('right');
     } else if (info.offset.x < -threshold) {
@@ -193,29 +202,64 @@ export function SwipeView({ pois, onSave, onSkip, onFinish, onViewPoiChange, act
                 whileTap={{ cursor: 'grabbing', scale: 0.98 }}
                 className="absolute inset-x-0 inset-y-0 w-full h-full bg-[#1A1A1A] rounded-[32px] shadow-2xl overflow-hidden flex flex-col border border-white/5 cursor-grab origin-bottom touch-none"
               >
-                {/* Image Section - Scrollable Gallery */}
-                <div className="relative h-[40%] w-full shrink-0 overflow-hidden group/gallery">
-                  <div 
-                    className="flex h-full w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide pointer-events-auto touch-pan-x cursor-auto"
-                    onPointerDownCapture={(e) => e.stopPropagation()}
-                    onTouchStartCapture={(e) => e.stopPropagation()}
-                  >
-                    {[poi.image, ...poi.moreImages].map((img, i) => (
-                      <div key={i} className="min-w-full h-full snap-center relative">
-                        <img 
-                          src={img} 
-                          alt={`${poi.name} ${i}`} 
-                          className="w-full h-full object-cover select-none pointer-events-none"
-                        />
-                      </div>
-                    ))}
+                {/* Image Section - Tap and Interaction-friendly */}
+                <div className="relative h-[45%] w-full shrink-0 overflow-hidden group/gallery bg-[#111]">
+                  <AnimatePresence mode="wait">
+                    <motion.img 
+                      key={`${poi.id}-${currentImageIndex}`}
+                      src={[poi.image, ...poi.moreImages][currentImageIndex]} 
+                      alt={`${poi.name}`} 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="w-full h-full object-cover select-none pointer-events-none"
+                    />
+                  </AnimatePresence>
+
+                  {/* Badges (Visible only when dragging) */}
+                  {isTop && (
+                    <>
+                      <motion.div 
+                        style={{ opacity: likeOpacity, scale: badgeScale }}
+                        className="absolute top-10 left-6 z-50 border-4 border-green-500 rounded-lg px-6 py-2 -rotate-[15deg] pointer-events-none"
+                      >
+                        <span className="text-green-500 text-3xl font-black uppercase tracking-widest">SAVE</span>
+                      </motion.div>
+                      <motion.div 
+                        style={{ opacity: skipOpacity, scale: badgeScale }}
+                        className="absolute top-10 right-6 z-50 border-4 border-red-500 rounded-lg px-6 py-2 rotate-[15deg] pointer-events-none"
+                      >
+                        <span className="text-red-500 text-3xl font-black uppercase tracking-widest">SKIP</span>
+                      </motion.div>
+                    </>
+                  )}
+
+                  {/* Tap regions for image switching */}
+                  <div className="absolute inset-x-0 inset-y-0 flex animate-in fade-in duration-500">
+                    <div 
+                      className="w-1/3 h-full cursor-w-resize" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCurrentImageIndex(prev => Math.max(0, prev - 1));
+                      }}
+                    />
+                    <div className="w-1/3 h-full" /> {/* Buffer for central swipe */}
+                    <div 
+                      className="w-1/3 h-full cursor-e-resize" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const max = [poi.image, ...poi.moreImages].length;
+                        setCurrentImageIndex(prev => Math.min(max - 1, prev + 1));
+                      }}
+                    />
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] via-transparent to-transparent pointer-events-none" />
                   
-                  {/* Indicators */}
+                  {/* Indicators (Simplified for tap) */}
                   <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
                     {[poi.image, ...poi.moreImages].map((_, i) => (
-                      <div key={i} className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-white' : 'bg-white/30'}`} />
+                      <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${i === currentImageIndex ? 'bg-white scale-125' : 'bg-white/30'}`} />
                     ))}
                   </div>
 

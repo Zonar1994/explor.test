@@ -408,12 +408,12 @@ export function TripDetails({
         </div>
       </div>
 
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 custom-scrollbar pb-32">
-        <h3 className="text-[15px] font-bold text-white mb-3 leading-tight">{trip.name}!!</h3>
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 custom-scrollbar pb-16">
+        <h3 className="text-[14px] font-bold text-white mb-2 ml-1 leading-tight">{trip.name}!!</h3>
         
-        {/* Date Tabs */}
-        <div className="sticky top-0 z-40 bg-[#1A1A1A]/90 backdrop-blur-md pb-2 mb-5 border-b border-white/5 pt-2">
-          <div className="flex gap-5 overflow-x-auto pb-1 scrollbar-hide">
+        {/* Date Tabs (More compact) */}
+        <div className="sticky top-0 z-40 bg-[#1A1A1A]/90 backdrop-blur-md pb-1 mb-4 border-b border-white/5 pt-1">
+          <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide">
             {dayTabs.map((date, idx) => (
               <button 
                 key={`${date}-${idx}`}
@@ -438,73 +438,48 @@ export function TripDetails({
 
         <div className="space-y-2">
           {trip.items.length === 0 ? (
-            <div className="flex flex-col gap-4 py-2">
-              <div className="bg-[#222] p-4 rounded-3xl border border-white/5 shadow-2xl">
-                <h4 className="text-[14px] font-black text-white mb-1.5 uppercase tracking-tight">Set Start Point</h4>
-                <p className="text-gray-400 text-[11px] mb-4 leading-relaxed">Choose where your journey begins. Search for a location or pick one manually on the map.</p>
-                
-                <div className="space-y-3">
+            <div className="flex flex-col gap-3 py-1 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <div className="bg-[#222] p-3.5 rounded-3xl border border-white/5 shadow-2xl">
+                <div className="flex justify-between items-center mb-1.5">
+                  <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Set Start Point</h4>
+                  {isDiscovering && <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />}
+                </div>
+
+                <div className="flex flex-col gap-2.5">
                   <div className="relative">
-                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">
-                      <MapPin size={16} />
-                    </div>
+                    <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
                     <input 
                       type="text" 
-                      placeholder="Enter start location..."
-                      className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-[13px] font-bold text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500/50 transition-all"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          onWaypointSet?.(51.5583, 5.0833);
-                        }
-                      }}
+                      placeholder="Search for a location..."
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-9 pr-4 text-[12px] font-bold text-white placeholder:text-gray-700 focus:outline-none focus:border-blue-500/50 transition-all"
+                      onKeyDown={(e) => { if (e.key === 'Enter') onWaypointSet?.(51.5583, 5.0833); }}
                     />
                   </div>
 
-                  <button 
-                    onClick={() => {
-                      if (!isDiscovering) onWaypointSet?.(51.5583, 5.0833);
-                    }}
-                    disabled={isDiscovering}
-                    className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg ${isDiscovering ? 'bg-blue-600/50 cursor-wait text-white/70 shadow-blue-500/10' : 'bg-blue-500 hover:bg-blue-600 text-white shadow-blue-500/20'}`}
-                  >
-                    {isDiscovering ? (
-                      <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Fetching...</>
-                    ) : (
-                      <><Navigation size={14} className="fill-white" /> Use Current Location</>
-                    )}
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                  <button 
-                    disabled={isDiscovering}
-                    onClick={() => { if (!isDiscovering) onWaypointSet?.(51.5583, 5.0833); }}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all active:scale-95 ${isDiscovering ? 'bg-blue-500/5 border-blue-500/10 cursor-wait' : 'bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20'}`}
-                  >
-                    {isDiscovering ? (
-                      <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin my-[1px]" />
-                    ) : (
-                      <Navigation size={18} className="text-blue-400" />
-                    )}
-                    <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Current</span>
-                  </button>
-                  <button 
-                    onClick={() => onPoiClick('swipe')}
-                    className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all active:scale-95"
-                  >
-                    <Compass size={18} className="text-gray-400" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-300">Discover</span>
-                  </button>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button 
+                      onClick={() => { if (!isDiscovering) onWaypointSet?.(51.5583, 5.0833); }}
+                      disabled={isDiscovering}
+                      className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all active:scale-[0.98] shadow-lg ${isDiscovering ? 'bg-blue-600/50 text-white/50 animate-pulse' : 'bg-blue-500 hover:bg-blue-600 text-white shadow-blue-500/20'}`}
+                    >
+                      <Navigation size={12} className="fill-current" />
+                      <span>{isDiscovering ? 'Fetching...' : 'Current'}</span>
+                    </button>
+                    
+                    <button 
+                      onClick={() => onPoiClick('swipe')}
+                      className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 transition-all active:scale-[0.98]"
+                    >
+                      <Compass size={12} />
+                      <span>Discover</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div className="text-center px-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-full mb-2">
-                   <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />
-                   <span className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Map Waypoint Active</span>
-                </div>
-                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest leading-relaxed">
-                  Tip: Right click (or long-press) anywhere on the map to set a precise start waypoint.
+              <div className="text-center bg-yellow-500/5 border border-yellow-500/10 rounded-2xl p-2.5">
+                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest leading-normal">
+                  Tip: Right click (or long-press) on the map to set a start waypoint.
                 </p>
               </div>
             </div>
