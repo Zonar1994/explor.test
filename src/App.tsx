@@ -188,16 +188,25 @@ export default function App() {
       return;
     }
     
-    // If no trip ID, it's a global discover
-    if (!tripId) {
+    // Get the POI objects from current osmPois cache
+    const newLikedPois = poiIds.map(id => osmPois.find(p => p.id === id)).filter(Boolean) as POI[];
+    
+    // Always add to global liked list regardless of trip context
+    if (newLikedPois.length > 0) {
       setLikedPois(prev => {
-        const newPois = poiIds.map(id => osmPois.find(p => p.id === id)).filter(Boolean) as POI[];
         const merged = [...prev];
-        newPois.forEach(np => { if (!merged.some(m => m.id === np.id)) merged.push(np); });
+        newLikedPois.forEach(np => { 
+          if (!merged.some(m => m.id === np.id)) merged.push(np); 
+        });
         return merged;
       });
+    }
+
+    // If no trip ID, we're done - go back to the list
+    if (!tripId) {
       setActiveModal('trips');
-      toast.success(`Saved ${poiIds.length} places to your Liked list!`, {
+      setViewMode('liked'); // Automatically switch to liked view so they see them!
+      toast.success(`Saved ${newLikedPois.length} places to your Liked list!`, {
         icon: <Heart className="text-pink-500 fill-pink-500" />,
         duration: 3000
       });
@@ -365,6 +374,7 @@ export default function App() {
           onWaypointSet={handleWaypointSet}
           onReFetch={handleReFetch}
           onMapReady={setMapRef}
+          likedPois={likedPois}
         />
       </div>
 
@@ -452,6 +462,7 @@ export default function App() {
                   archivedTrips={archivedTrips}
                   likedPois={likedPois}
                   onRemoveLikedPoi={(id) => setLikedPois(prev => prev.filter(p => p.id !== id))}
+                  onPoiClick={handlePoiClick}
                   mapType={mapType}
                   setMapType={setMapType}
                   onMapTypeToggle={toggleMapType}

@@ -1,4 +1,5 @@
 import { POI } from '../types';
+import { TILBURG_POIS } from '../data/tilburgData';
 
 /**
  * Service to fetch POIs from OpenStreetMap using the Overpass API
@@ -15,6 +16,13 @@ export const fetchOsmPois = async (south: number, west: number, north: number, e
     } catch (e) {
       localStorage.removeItem(cacheKey);
     }
+  }
+
+  // Check if we are searching near Tilburg (spoof center: 51.5583, 5.0833)
+  const isTilburg = Math.abs(south - 51.5) < 0.2 && Math.abs(west - 5.0) < 0.2;
+  if (isTilburg) {
+    // Return our high-quality curated Tilburg list
+    return TILBURG_POIS;
   }
 
   const query = `

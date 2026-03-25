@@ -17,6 +17,7 @@ interface TripsListProps {
   archivedTrips: Trip[];
   likedPois: POI[];
   onRemoveLikedPoi: (id: string) => void;
+  onPoiClick?: (id: string) => void;
   mapType?: string;
   onMapTypeToggle?: () => void;
   setMapType?: (type: 'voyager' | 'light' | 'dark' | 'satellite' | 'hybrid') => void;
@@ -37,6 +38,7 @@ export function TripsList({
   archivedTrips,
   likedPois,
   onRemoveLikedPoi,
+  onPoiClick,
   mapType, 
   onMapTypeToggle, 
   setMapType 
@@ -137,7 +139,8 @@ export function TripsList({
               {likedPois.map((poi) => (
                 <div 
                   key={poi.id} 
-                  className="group py-4 flex items-center justify-between border-b border-white/5 hover:bg-white/5 -mx-6 px-6 transition-colors"
+                  onClick={() => onPoiClick?.(poi.id)}
+                  className="group py-4 flex items-center justify-between border-b border-white/5 hover:bg-white/5 -mx-6 px-6 transition-all cursor-pointer active:scale-[0.98]"
                 >
                   <div className="flex items-center gap-3 min-w-0 pr-4">
                      <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0">

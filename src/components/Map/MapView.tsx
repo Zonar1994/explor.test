@@ -21,6 +21,13 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
+const HeartIcon = L.divIcon({
+  html: '<div style="display:flex; justify-content:center; align-items:center; width:30px; height:30px; background:white; border-radius:50%; border:2px solid #EC4899; box-shadow:0 10px 15px -3px rgba(236, 72, 153, 0.3); transform:translate(-50%, -50%);"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#EC4899" stroke="#EC4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></div>',
+  className: '',
+  iconSize: [30, 30],
+  iconAnchor: [0, 0]
+});
+
 interface MapViewProps {
   pois: POI[];
   tripPois?: POI[];
@@ -34,6 +41,7 @@ interface MapViewProps {
   onWaypointSet?: (lat: number, lng: number) => void;
   onReFetch?: () => void;
   onMapReady?: (map: L.Map) => void;
+  likedPois?: POI[];
 }
 
 function MapReadyHandler({ onMapReady }: { onMapReady?: (map: L.Map) => void }) {
@@ -152,7 +160,8 @@ export function MapView({
   onOsmPoisChange,
   onWaypointSet,
   onReFetch,
-  onMapReady
+  onMapReady,
+  likedPois = []
 }: MapViewProps) {
   const tilburgCenter: [number, number] = [51.5583, 5.0833]; // Tilburg (Talent Square)
   const [zoomLevel, setZoomLevel] = useState(13);
@@ -294,29 +303,34 @@ export function MapView({
           />
         )}
 
-        {zoomLevel > ZOOM_THRESHOLD && pois.map((poi) => (
-          <Marker 
-            key={poi.id} 
-            position={[poi.lat, poi.lng]}
-            eventHandlers={{
-              click: () => onPoiClick(poi.id),
-            }}
-          >
-            <Popup>
-              <div className="font-semibold">{poi.name}</div>
-              <div className="text-sm text-gray-600">{poi.category}</div>
-              <button 
-                className="mt-2 text-blue-600 text-sm font-medium hover:underline"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPoiClick(poi.id);
-                }}
-              >
-                View Details
-              </button>
-            </Popup>
-          </Marker>
-        ))}
+        {zoomLevel > ZOOM_THRESHOLD && pois.map((poi) => {
+          const isLiked = likedPois.some(lp => lp.id === poi.id);
+          return (
+            <Marker 
+              key={poi.id} 
+              position={[poi.lat, poi.lng]}
+              icon={isLiked ? HeartIcon : DefaultIcon}
+              eventHandlers={{
+                click: () => onPoiClick(poi.id),
+              }}
+            >
+              <Popup>
+                <div className="font-semibold">{poi.name}</div>
+                <div className="text-sm text-gray-600">{poi.category}</div>
+                {isLiked && <div className="text-pink-500 font-bold text-xs mt-1 uppercase">★ Liked Place</div>}
+                <button 
+                  className="mt-2 text-blue-600 text-sm font-medium hover:underline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPoiClick(poi.id);
+                  }}
+                >
+                  View Details
+                </button>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
     </div>
   );
