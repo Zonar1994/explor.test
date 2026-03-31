@@ -144,11 +144,11 @@ export default function App() {
   const handlePoiClick = (id: string) => {
     if (id === 'swipe') {
       setIsExpanded(false);
-      setModalHeight(75);
+      setModalHeight(82);
       setActiveModal('swipe');
     } else {
       setSelectedPoiId(id);
-      setModalHeight(75);
+      setModalHeight(82);
       setActiveModal('poi-details');
     }
   };
@@ -285,7 +285,7 @@ export default function App() {
     setOsmPois(newPois);
     setIsDiscovering(false);
 
-    setModalHeight(75); // Ready for swipe deck height
+    setModalHeight(82); // Ready for swipe deck height
     toast.success("Start point set! Discovering places nearby...");
     
     // Auto-open discovery instantly

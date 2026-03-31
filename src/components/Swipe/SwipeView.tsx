@@ -151,7 +151,7 @@ export function SwipeView({ pois, onSave, onSkip, onFinish, onViewPoiChange, act
   const stack = filteredPois.slice(currentIndex, currentIndex + 2);
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center p-2.5 pb-20 overflow-hidden bg-[#121212]">
+    <div className="relative w-full h-full flex flex-col items-center justify-center px-2 pt-2 pb-16 overflow-hidden bg-[#121212]">
       {activeFilter && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] pointer-events-none">
           <motion.div 
@@ -411,8 +411,8 @@ export function SwipeView({ pois, onSave, onSkip, onFinish, onViewPoiChange, act
       {/* Action Buttons with Gradient Shading */}
       {!hideActions && (
         <>
-          <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#121212] via-[#121212]/90 to-transparent pointer-events-none z-30" />
-          <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-4 z-40 pointer-events-none">
+          <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#121212] via-[#121212]/90 to-transparent pointer-events-none z-30" />
+          <div className="absolute bottom-2 left-0 right-0 flex items-center justify-center gap-4 z-40 pointer-events-none">
             <button 
               onClick={(e) => { e.stopPropagation(); handleUndo(); }}
               disabled={currentIndex === 0}
